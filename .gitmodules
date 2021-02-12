@@ -1,0 +1,4 @@
+[submodule "server"]
+	path = server
+	url = git@github.com:wafflestudio/snuboard-server.git
+	branch = main

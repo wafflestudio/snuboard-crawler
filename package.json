@@ -3,7 +3,14 @@
 	"version": "0.0.2",
 	"description": "This is the crawler for SNUBoard project.",
 	"dependencies": {
-		"apify": "^1.0.1"
+		"apify": "^1.0.1",
+		"bcrypt": "^5.0.0",
+		"better-sqlite3-with-prebuilds": "^7.1.1",
+		"class-transformer": "^0.3.2",
+		"dotenv": "^8.2.0",
+		"mysql": "^2.18.1",
+		"reflect-metadata": "^0.1.13",
+		"typeorm": "^0.2.31"
 	},
 	"devDependencies": {
 		"@apify/eslint-config": "^0.1.3",
@@ -17,10 +24,12 @@
 		"typescript": "^4.1.5"
 	},
 	"scripts": {
-		"start": "node dist/main.js",
+		"start": "node dist/src/main.js",
 		"lint": "eslint \"{src,test}/**/*.{js,ts,tsx}\" --fix",
 		"build": "tsc",
-		"clean": "rm -rf apify_storage"
+		"rebuild": "rm -rf dist/* && npm run build",
+		"clean": "rm -rf apify_storage",
+		"prestart": "npm run build"
 	},
 	"author": "Sanggyu Lee",
 	"license": "UNLICENSED"

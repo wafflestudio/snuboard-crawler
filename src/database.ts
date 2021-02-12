@@ -22,7 +22,10 @@ export async function createDBConnection(): Promise<Connection> {
         username: process.env.DATABASE_USER,
         password: process.env.DATABASE_PASSWORD,
         database: process.env.DATABASE_DBNAME,
-        entities: [path.resolve(__dirname, '../server/src/**/*.entity.js')],
+        entities: [
+            path.resolve(__dirname, '../server/src/**/*.entity.js'),
+            path.resolve(__dirname, '../server/src/**/*.entity.ts'),
+        ],
         synchronize: ENV !== 'prod',
     });
 }

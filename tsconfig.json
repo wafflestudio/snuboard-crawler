@@ -81,8 +81,7 @@
   },
   "include": [
     "src/**/*",
-    "test/**/*",
-    "server/src/**/*.entity.ts",
-    ".eslintrc.js"
+    "tests/**/*",
+    "server/src/**/*.entity.ts"
   ],
 }

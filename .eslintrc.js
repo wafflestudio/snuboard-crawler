@@ -10,6 +10,7 @@ module.exports = {
         node: true,
         jest: true,
     },
+    ignorePatterns: ['.eslintrc.js', 'jest.config.js'],
     extends: [
         '@apify',
         'plugin:@typescript-eslint/recommended',

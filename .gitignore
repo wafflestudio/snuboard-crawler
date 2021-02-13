@@ -33,7 +33,7 @@ lib-cov
 coverage
 *.lcov
 
-# nyc test coverage
+# nyc tests coverage
 .nyc_output
 
 # Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
@@ -123,3 +123,9 @@ dist
 .vscode-test
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+
+# secrets
+
+.env.dev
+.env.prod

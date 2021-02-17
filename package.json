@@ -6,6 +6,7 @@
 		"apify": "^1.0.1",
 		"bcrypt": "^5.0.0",
 		"better-sqlite3-with-prebuilds": "^7.1.1",
+		"cheerio": "^1.0.0-rc.3",
 		"class-transformer": "^0.3.2",
 		"dotenv": "^8.2.0",
 		"mysql2": "^2.2.5",

@@ -11,6 +11,7 @@ import { Notice, File } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
+import { strptime } from '../micro-strptime';
 
 const {
     utils: { log },
@@ -39,12 +40,15 @@ export async function handlePage(context: CheerioHandlePageInputs): Promise<void
         content = load(content, { decodeEntities: false })('body').html() ?? '';
         // ^ encode non-unicode letters with utf-8 instead of HTML encoding
         notice.content = content;
-        notice.preview = contentElement.text().substring(0, 1000); // texts are automatically utf-8 encoded
+        notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
 
-        // const dateString: string = $('div.submitted').text().split(',')[1].substring(8).trim().split(' ')[0];
-        // TODO parse time
-        const dateParts = siteData.dateString.split('/');
-        notice.createdAt = new Date(+dateParts[0], +dateParts[1] - 1, +dateParts[2]);
+        const fullDateString: string = $('div.submitted').text().split(',')[1].substring(8).trim();
+        // example: '2021/02/15 (월) 오후 7:21'
+        try {
+            notice.createdAt = strptime(fullDateString, '%Y/%m/%d %a %p %H:%M');
+        } catch {
+            notice.createdAt = strptime(siteData.dateString, '%Y/%m/%d');
+        }
 
         notice.isPinned = siteData.isPinned;
 

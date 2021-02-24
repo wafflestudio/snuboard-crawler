@@ -18,17 +18,14 @@ const fdMap = new Map(
     Object.entries({
         '%': <regex>{
             format: '%',
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             handler: null,
         },
         a: <regex>{
             format: '[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\\w()]+',
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             handler: null,
         },
         A: <regex>{
             format: '[a-z]+',
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             handler: null,
         },
         b: <regex>{

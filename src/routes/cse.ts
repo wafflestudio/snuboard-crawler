@@ -17,7 +17,7 @@ const {
     utils: { log },
 } = Apify;
 const departmentName = '컴퓨터공학부';
-const departmentId = 'cse'; // this value must be equal to the filename
+const departmentCode = 'cse'; // this value must be equal to the filename
 
 export async function handlePage(context: CheerioHandlePageInputs): Promise<void> {
     const { request, $ } = context;
@@ -129,7 +129,7 @@ export async function handleList(context: CheerioHandlePageInputs, requestQueue:
 export async function startCrawl(connection: Connection): Promise<void> {
     assert(connection.isConnected);
     log.info('Starting crawl for '.concat(departmentName));
-    const requestQueue = await Apify.openRequestQueue(departmentId); // each queue should have different id
+    const requestQueue = await Apify.openRequestQueue(departmentCode); // each queue should have different id
     const department = await getOrCreate(Department, { name: departmentName });
 
     // department-specific initialization urls

@@ -21,13 +21,13 @@ const departmentName = '전기정보공학부';
 const departmentCode = 'ee'; // this value must be equal to the filename
 const eeBaseUrl = 'https://ee.snu.ac.kr/community/notice/';
 const eeCategories = [
-    //'academic',
+    'academic',
     'scholarship',
-  /*  'admissions',
+    'admissions',
     'campuslife',
     'jobs',
     'sugang',
-    'yonhapai'*/
+    'yonhapai'
 ];
 const eeCategoryTags: categoryTag = {
     sugang: '수강',

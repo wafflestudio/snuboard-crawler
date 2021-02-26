@@ -29,7 +29,7 @@
 		"typescript": "^4.1.5"
 	},
 	"scripts": {
-		"start": "node dist/src/main.js",
+		"start": "tsc && node dist/src/main.js",
 		"lint": "eslint \"{src,test}/**/*.{js,ts,tsx}\" --fix",
 		"build": "tsc",
 		"rebuild": "rm -rf dist/* && npm run build",

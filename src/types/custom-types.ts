@@ -6,3 +6,7 @@ export interface SiteData {
     isList: boolean;
     dateString: string;
 }
+
+export interface categoryTag{
+    [key:string] : string
+}

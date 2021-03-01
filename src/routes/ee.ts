@@ -20,19 +20,18 @@ const {
 const departmentName = '전기정보공학부';
 const departmentCode = 'ee'; // this value must be equal to the filename
 const eeBaseUrl = 'https://ee.snu.ac.kr/community/notice/';
-const eeCategories = [
-    'academic',
-    'scholarship',
-    'admissions',
-    'campuslife',
-    'jobs',
-    'sugang',
-    'yonhapai'
-];
 const eeCategoryTags: categoryTag = {
+    academic:'학사',
+    scholarship:'장학',
+    admissions:'입시&기타',
+    campuslife:'대학생활',
+    jobs:'취업&전문연',
     sugang: '수강',
     yonhapai: '인공지능'
 };
+const excludeTags = [
+    'sugang','yonhapai'
+]
 
 export async function handlePage(context: CheerioHandlePageInputs): Promise<void> {
     const {request, $} = context;
@@ -83,9 +82,10 @@ export async function handlePage(context: CheerioHandlePageInputs): Promise<void
         );
 
         const category = url.replace(eeBaseUrl, '').split('?')[0]
-        const tags = [category in eeCategoryTags ?
-            eeCategoryTags[category]
-            : title.slice(1, title.indexOf(']')).trim()];
+        const tags = [eeCategoryTags[category]]
+        if(!excludeTags.includes(category) && title.startsWith('[')){
+            tags.push(title.slice(1, title.indexOf(']')).trim());
+        }
         await getOrCreateTags(tags, notice, siteData.department);
     }
 }
@@ -154,7 +154,7 @@ export async function startCrawl(connection: Connection): Promise<void> {
 
     // department-specific initialization urls
     const siteData: SiteData = {department, isList: true, isPinned: false, dateString: ''};
-    for (const category of eeCategories) {
+    for (const category of Object.keys(eeCategoryTags)) {
         await requestQueue.addRequest({
             url: eeBaseUrl + category,
             userData: siteData,

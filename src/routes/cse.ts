@@ -149,4 +149,3 @@ export const cse = new CSECrawler({
     departmentCode: 'cse', // this value must be equal to the filename
     baseUrl: 'https://cse.snu.ac.kr/department-notices'
 })
-

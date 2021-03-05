@@ -1,4 +1,4 @@
-import {Department, Tag} from '../../server/src/department/department.entity';
+import { Department, Tag } from '../../server/src/department/department.entity';
 
 export interface SiteData {
     department: Department;
@@ -17,7 +17,7 @@ export interface CrawlerInit {
     baseUrl: string;
 }
 
-export interface CategoryCrawlerInit extends CrawlerInit{
+export interface CategoryCrawlerInit extends CrawlerInit {
     categoryTags: CategoryTag;
     excludedTag?: string;
 }

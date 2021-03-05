@@ -53,17 +53,12 @@ export async function runCrawler(
     handleList: (inputs: CheerioHandlePageInputs, queue: RequestQueue) => Promise<void>,
 ): Promise<void> {
     const timeout = 10;
-    let visitCount = 0;
-    const maxVisitCount = 30; // limit crawling capability while developing
 
     const crawler = new Apify.CheerioCrawler({
         requestQueue,
         maxConcurrency: 1,
         maxRequestRetries: 1,
         handlePageFunction: async (context) => {
-            visitCount += 1;
-            if (visitCount > maxVisitCount) return;
-
             try {
                 if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);
                 else await handlePage(context);

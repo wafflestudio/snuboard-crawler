@@ -1,21 +1,22 @@
-import {Crawler} from "./crawler";
-import {CategoryTag, SiteData, CategoryCrawlerInit} from "../types/custom-types";
-import {CheerioHandlePageInputs} from "apify/types/crawlers/cheerio_crawler";
-import {absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice} from "../utils";
-import {File, Notice} from "../../server/src/notice/notice.entity";
-import {load} from "cheerio";
-import {strptime} from "../micro-strptime";
-import {RequestQueue} from "apify";
-import {Connection} from "typeorm";
-import assert from "assert";
-import * as Apify from "apify";
-import {Department} from "../../server/src/department/department.entity";
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { load } from 'cheerio';
+import { RequestQueue } from 'apify';
+import { Connection } from 'typeorm';
+import assert from 'assert';
+import * as Apify from 'apify';
+import { strptime } from '../micro-strptime';
+import { File, Notice } from '../../server/src/notice/notice.entity';
+import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
+import { CategoryTag, SiteData, CategoryCrawlerInit } from '../types/custom-types';
+import { Crawler } from './crawler';
+import { Department } from '../../server/src/department/department.entity';
 
-export class CategoryCrawler extends Crawler{
+export class CategoryCrawler extends Crawler {
     protected readonly categoryTags: CategoryTag;
+
     protected readonly excludedTag?: string;
 
-    constructor(initData:CategoryCrawlerInit) {
+    constructor(initData: CategoryCrawlerInit) {
         super(initData);
         this.categoryTags = initData.categoryTags;
         this.excludedTag = initData.excludedTag;
@@ -74,7 +75,7 @@ export class CategoryCrawler extends Crawler{
 
             let tags: string[] = [];
             const liCategory = $('li.category');
-            if(liCategory.length){
+            if (liCategory.length) {
                 liCategory.each((index, element) => {
                     tags.push($(element).text().substring(4).trim());
                 });
@@ -86,7 +87,7 @@ export class CategoryCrawler extends Crawler{
             tags = tags.filter((tag) => tag !== this.excludedTag);
             await getOrCreateTags(tags, notice, siteData.department);
         }
-    }
+    };
 
     handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
@@ -122,12 +123,17 @@ export class CategoryCrawler extends Crawler{
                 });
             });
 
-            const nextPath = urlInstance.pathname.split('/').slice(0,4).join('/');
+            const nextPath = urlInstance.pathname.split('/').slice(0, 4).join('/');
 
             const nextList = absoluteLink(`${nextPath}/page/${page + 1}`, request.loadedUrl);
             if (!nextList) return;
 
-            const lastNoticeId: string | undefined = $('table.lc01 tbody tr').last().children('td').first().text().trim();
+            const lastNoticeId: string | undefined = $('table.lc01 tbody tr')
+                .last()
+                .children('td')
+                .first()
+                .text()
+                .trim();
             if (!lastNoticeId || Number.isNaN(+lastNoticeId)) return;
 
             // +lastNoticeId === 1  <==> loaded page is the last page
@@ -145,7 +151,7 @@ export class CategoryCrawler extends Crawler{
                 });
             }
         }
-    }
+    };
 
     startCrawl = async (connection: Connection): Promise<void> => {
         assert(connection.isConnected);
@@ -155,7 +161,7 @@ export class CategoryCrawler extends Crawler{
 
         // department-specific initialization urls
         const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
-        const categories:string[] = Object.keys(this.categoryTags);
+        const categories: string[] = Object.keys(this.categoryTags);
 
         await Promise.all(
             categories.map(async (category) => {
@@ -167,6 +173,5 @@ export class CategoryCrawler extends Crawler{
         );
 
         await runCrawler(requestQueue, this.handlePage, this.handleList);
-    }
-
+    };
 }

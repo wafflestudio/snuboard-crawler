@@ -1,4 +1,4 @@
-import {CategoryCrawler} from "../classes/categoryCrawler";
+import { CategoryCrawler } from '../classes/categoryCrawler';
 
 export const ere = new CategoryCrawler({
     departmentName: '에너지자원공학과',
@@ -10,7 +10,7 @@ export const ere = new CategoryCrawler({
         story: '홍보',
         event: '행사 및 소식',
         newsletter: '뉴스레터',
-        smart: '스마트자원개발'
+        smart: '스마트자원개발',
     },
-    excludedTag: '미분류'
+    excludedTag: '미분류',
 });

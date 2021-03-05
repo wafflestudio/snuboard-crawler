@@ -7,6 +7,17 @@ export interface SiteData {
     dateString: string;
 }
 
-export interface categoryTag {
+export interface CategoryTag {
     [key: string]: string;
+}
+
+export interface CrawlerInit {
+    departmentName: string;
+    departmentCode: string;
+    baseUrl: string;
+}
+
+export interface CategoryCrawlerInit extends CrawlerInit {
+    categoryTags: CategoryTag;
+    excludedTag?: string;
 }

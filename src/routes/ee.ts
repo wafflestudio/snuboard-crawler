@@ -3,163 +3,149 @@
 
 import assert from 'assert';
 import * as Apify from 'apify';
-import {CheerioHandlePageInputs} from 'apify/types/crawlers/cheerio_crawler';
-import {RequestQueue} from 'apify';
-import {load} from 'cheerio';
-import {Connection} from 'typeorm';
-import {Notice, File} from '../../server/src/notice/notice.entity.js';
-import {categoryTag, SiteData} from '../types/custom-types';
-import {absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice} from '../utils';
-import {Department} from '../../server/src/department/department.entity';
-import {strptime} from '../micro-strptime';
-import {URL} from "url";
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { RequestQueue } from 'apify';
+import { load } from 'cheerio';
+import { Connection } from 'typeorm';
+import { URL } from 'url';
+import { Notice, File } from '../../server/src/notice/notice.entity.js';
+import { CategoryCrawlerInit, CategoryTag, SiteData } from '../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
+import { Department } from '../../server/src/department/department.entity';
+import { strptime } from '../micro-strptime';
+import { CategoryCrawler } from '../classes/categoryCrawler';
 
-const {
-    utils: {log},
-} = Apify;
-const departmentName = '전기정보공학부';
-const departmentCode = 'ee'; // this value must be equal to the filename
-const eeBaseUrl = 'https://ee.snu.ac.kr/community/notice/';
-const eeCategoryTags: categoryTag = {
-    academic:'학사',
-    scholarship:'장학',
-    admissions:'입시&기타',
-    campuslife:'대학생활',
-    jobs:'취업&전문연',
-    sugang: '수강',
-    yonhapai: '인공지능'
-};
-const excludeTags = [
-    'sugang','yonhapai'
-]
+class EECrawler extends CategoryCrawler {
+    private readonly excludeTags: string[];
 
-export async function handlePage(context: CheerioHandlePageInputs): Promise<void> {
-    const {request, $} = context;
-    const {url} = request;
-    const siteData = <SiteData>request.userData;
+    constructor(initData: CategoryCrawlerInit) {
+        super(initData);
+        this.excludeTags = ['sugang', 'yonhapai'];
+    }
 
-    log.info('Page opened.', {url});
-    if ($) {
-        // creation order
-        // dept -> notice -> file
-        //                -> tag -> notice_tag
+    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+        const { request, $ } = context;
+        const { url } = request;
+        const siteData = <SiteData>request.userData;
 
-        const notice = await getOrCreate(Notice, {link: url}, false);
+        this.log.info('Page opened.', { url });
+        if ($) {
+            // creation order
+            // dept -> notice -> file
+            //                -> tag -> notice_tag
 
-        notice.department = siteData.department;
-        const title = $('div#bbs-view-wrap').children('h1').text();
-        notice.title = title;
-        const contentElement = $('div.cnt');
+            const notice = await getOrCreate(Notice, { link: url }, false);
 
-        let content = load(contentElement.html() ?? '',
-            {decodeEntities: false})('body').html() ?? '';
-        // ^ encode non-unicode letters with utf-8 instead of HTML encoding
-        notice.content = content;
-        notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            notice.department = siteData.department;
+            const title = $('div#bbs-view-wrap').children('h1').text();
+            notice.title = title;
+            const contentElement = $('div.cnt');
 
-        notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
-        notice.isPinned = siteData.isPinned;
-        notice.link = url;
+            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            // ^ encode non-unicode letters with utf-8 instead of HTML encoding
+            notice.content = content;
+            notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
 
-        await saveNotice(notice);
+            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
+            notice.isPinned = siteData.isPinned;
+            notice.link = url;
 
-        const files: File[] = [];
-        $('div.att-file ul li div').each((index, element) => {
-            const fileUrl = $(element).children('a').attr('href');
-            if (fileUrl) {
-                const file = new File();
-                file.name = $(element).text().trim();
-                file.link = fileUrl;
-                files.push(file);
+            await saveNotice(notice);
+
+            const files: File[] = [];
+            $('div.att-file ul li div').each((index, element) => {
+                const fileUrl = $(element).children('a').attr('href');
+                if (fileUrl) {
+                    const file = new File();
+                    file.name = $(element).text().trim();
+                    file.link = fileUrl;
+                    files.push(file);
+                }
+            });
+            await Promise.all(
+                // using Promise.all in order to ensure full execution
+                files.map(async (file) => {
+                    file.notice = notice;
+                    await getOrCreate(File, file);
+                }),
+            );
+
+            const category = url.replace(this.baseUrl, '').split('?')[0];
+            const tags = [this.categoryTags[category]];
+            if (!this.excludeTags.includes(category) && title.startsWith('[')) {
+                tags.push(title.slice(1, title.indexOf(']')).trim());
             }
-        });
-        await Promise.all(
-            // using Promise.all in order to ensure full execution
-            files.map(async (file) => {
-                file.notice = notice;
-                await getOrCreate(File, file);
-            }),
-        );
-
-        const category = url.replace(eeBaseUrl, '').split('?')[0]
-        const tags = [eeCategoryTags[category]]
-        if(!excludeTags.includes(category) && title.startsWith('[')){
-            tags.push(title.slice(1, title.indexOf(']')).trim());
+            await getOrCreateTags(tags, notice, siteData.department);
         }
-        await getOrCreateTags(tags, notice, siteData.department);
-    }
-}
+    };
 
-export async function handleList(context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> {
-    const {request, $} = context;
-    const {url} = request;
-    const siteData = <SiteData>request.userData;
-    log.info('Page opened.', {url});
+    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+        const { request, $ } = context;
+        const { url } = request;
+        const siteData = <SiteData>request.userData;
+        this.log.info('Page opened.', { url });
 
-    if ($) {
-        $('div.bbs-blogstyle ul li').each((index, element) => {
-            const titleElement = $(element).children('a').first();
-            // const title = titleElement.children('strong').first().text();
-            const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
-            if (link === undefined) return;
-            const dateString = $(element).find('p.date span').text().split('l')[1].trim();
+        if ($) {
+            $('div.bbs-blogstyle ul li').each((index, element) => {
+                const titleElement = $(element).children('a').first();
+                // const title = titleElement.children('strong').first().text();
+                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                if (link === undefined) return;
+                const dateString = $(element).find('p.date span').text().split('l')[1].trim();
 
-            const newSiteData: SiteData = {
-                department: siteData.department,
-                isPinned: false,
-                isList: false,
-                dateString: dateString,
-            };
-            log.info('Enqueueing', {link});
-            requestQueue.addRequest({
-                url: link,
-                userData: newSiteData,
+                const newSiteData: SiteData = {
+                    department: siteData.department,
+                    isPinned: false,
+                    isList: false,
+                    dateString,
+                };
+                this.log.info('Enqueueing', { link });
+                requestQueue.addRequest({
+                    url: link,
+                    userData: newSiteData,
+                });
             });
-        });
 
-        const endElement = $('div.pagination-01').children('a.direction.next').last().attr('href');
-        const endUrl = absoluteLink(endElement, request.loadedUrl);
+            const endElement = $('div.pagination-01').children('a.direction.next').last().attr('href');
+            const endUrl = absoluteLink(endElement, request.loadedUrl);
 
-        if (!endUrl) return;
-        const endUrlInstance = new URL(endUrl);
-        const urlInstance = new URL(url);
-        const page: number = +(urlInstance.searchParams.get('page') ?? 1);
-        const endPage = endUrlInstance.searchParams.get('page');
+            if (!endUrl) return;
+            const endUrlInstance = new URL(endUrl);
+            const urlInstance = new URL(url);
+            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
+            const endPage = endUrlInstance.searchParams.get('page');
 
-        if (endPage && page < +endPage) {
-            urlInstance.searchParams.set('page', (page + 1).toString());
+            if (endPage && page < +endPage) {
+                urlInstance.searchParams.set('page', (page + 1).toString());
 
-            const nextList: string = urlInstance.href;
-            log.info('Enqueueing list', {nextList});
-            const nextListSiteData: SiteData = {
-                department: siteData.department,
-                isPinned: false,
-                isList: true,
-                dateString: '',
-            };
-            await requestQueue.addRequest({
-                url: nextList,
-                userData: nextListSiteData,
-            });
+                const nextList: string = urlInstance.href;
+                this.log.info('Enqueueing list', { nextList });
+                const nextListSiteData: SiteData = {
+                    department: siteData.department,
+                    isPinned: false,
+                    isList: true,
+                    dateString: '',
+                };
+                await requestQueue.addRequest({
+                    url: nextList,
+                    userData: nextListSiteData,
+                });
+            }
         }
-    }
+    };
 }
 
-
-export async function startCrawl(connection: Connection): Promise<void> {
-    assert(connection.isConnected);
-    log.info('Starting crawl for '.concat(departmentName));
-    const requestQueue = await Apify.openRequestQueue(departmentCode); // each queue should have different id
-    const department = await getOrCreate(Department, {name: departmentName});
-
-    // department-specific initialization urls
-    const siteData: SiteData = {department, isList: true, isPinned: false, dateString: ''};
-    for (const category of Object.keys(eeCategoryTags)) {
-        await requestQueue.addRequest({
-            url: eeBaseUrl + category,
-            userData: siteData,
-        });
-    }
-
-    await runCrawler(requestQueue, handlePage, handleList);
-}
+export const ee = new EECrawler({
+    departmentName: '전기정보공학부',
+    departmentCode: 'ee',
+    baseUrl: 'https://ee.snu.ac.kr/community/notice/',
+    categoryTags: {
+        academic: '학사',
+        scholarship: '장학',
+        admissions: '입시&기타',
+        campuslife: '대학생활',
+        jobs: '취업&전문연',
+        sugang: '수강',
+        yonhapai: '인공지능',
+    },
+});

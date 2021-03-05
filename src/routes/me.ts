@@ -1,4 +1,4 @@
-import {CategoryCrawler} from "../classes/categoryCrawler";
+import { CategoryCrawler } from '../classes/categoryCrawler';
 
 export const me = new CategoryCrawler({
     departmentName: '기계공학부',
@@ -9,7 +9,7 @@ export const me = new CategoryCrawler({
         news: '뉴스 및 이벤트',
         freeboard: '자유게시판',
         seminar: '세미나',
-        jobs: '취업정보'
+        jobs: '취업정보',
     },
-    excludedTag: '미분류'
+    excludedTag: '미분류',
 });

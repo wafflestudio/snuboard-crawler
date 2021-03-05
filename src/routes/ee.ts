@@ -3,48 +3,45 @@
 
 import assert from 'assert';
 import * as Apify from 'apify';
-import {CheerioHandlePageInputs} from 'apify/types/crawlers/cheerio_crawler';
-import {RequestQueue} from 'apify';
-import {load} from 'cheerio';
-import {Connection} from 'typeorm';
-import {Notice, File} from '../../server/src/notice/notice.entity.js';
-import {CategoryCrawlerInit, CategoryTag, SiteData} from '../types/custom-types';
-import {absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice} from '../utils';
-import {Department} from '../../server/src/department/department.entity';
-import {strptime} from '../micro-strptime';
-import {URL} from "url";
-import {CategoryCrawler} from "../classes/categoryCrawler";
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { RequestQueue } from 'apify';
+import { load } from 'cheerio';
+import { Connection } from 'typeorm';
+import { URL } from 'url';
+import { Notice, File } from '../../server/src/notice/notice.entity.js';
+import { CategoryCrawlerInit, CategoryTag, SiteData } from '../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
+import { Department } from '../../server/src/department/department.entity';
+import { strptime } from '../micro-strptime';
+import { CategoryCrawler } from '../classes/categoryCrawler';
 
 class EECrawler extends CategoryCrawler {
-    private readonly excludeTags: string[]
+    private readonly excludeTags: string[];
 
     constructor(initData: CategoryCrawlerInit) {
         super(initData);
-        this.excludeTags = [
-            'sugang', 'yonhapai'
-        ]
+        this.excludeTags = ['sugang', 'yonhapai'];
     }
 
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
-        const {request, $} = context;
-        const {url} = request;
+        const { request, $ } = context;
+        const { url } = request;
         const siteData = <SiteData>request.userData;
 
-        this.log.info('Page opened.', {url});
+        this.log.info('Page opened.', { url });
         if ($) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
 
-            const notice = await getOrCreate(Notice, {link: url}, false);
+            const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
             const title = $('div#bbs-view-wrap').children('h1').text();
             notice.title = title;
             const contentElement = $('div.cnt');
 
-            let content = load(contentElement.html() ?? '',
-                {decodeEntities: false})('body').html() ?? '';
+            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
@@ -73,20 +70,20 @@ class EECrawler extends CategoryCrawler {
                 }),
             );
 
-            const category = url.replace(this.baseUrl, '').split('?')[0]
-            const tags = [this.categoryTags[category]]
+            const category = url.replace(this.baseUrl, '').split('?')[0];
+            const tags = [this.categoryTags[category]];
             if (!this.excludeTags.includes(category) && title.startsWith('[')) {
                 tags.push(title.slice(1, title.indexOf(']')).trim());
             }
             await getOrCreateTags(tags, notice, siteData.department);
         }
-    }
+    };
 
     handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
-        const {request, $} = context;
-        const {url} = request;
+        const { request, $ } = context;
+        const { url } = request;
         const siteData = <SiteData>request.userData;
-        this.log.info('Page opened.', {url});
+        this.log.info('Page opened.', { url });
 
         if ($) {
             $('div.bbs-blogstyle ul li').each((index, element) => {
@@ -100,9 +97,9 @@ class EECrawler extends CategoryCrawler {
                     department: siteData.department,
                     isPinned: false,
                     isList: false,
-                    dateString: dateString,
+                    dateString,
                 };
-                this.log.info('Enqueueing', {link});
+                this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
                     url: link,
                     userData: newSiteData,
@@ -122,7 +119,7 @@ class EECrawler extends CategoryCrawler {
                 urlInstance.searchParams.set('page', (page + 1).toString());
 
                 const nextList: string = urlInstance.href;
-                this.log.info('Enqueueing list', {nextList});
+                this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
                     isPinned: false,
@@ -135,7 +132,7 @@ class EECrawler extends CategoryCrawler {
                 });
             }
         }
-    }
+    };
 }
 
 export const ee = new EECrawler({
@@ -149,6 +146,6 @@ export const ee = new EECrawler({
         campuslife: '대학생활',
         jobs: '취업&전문연',
         sugang: '수강',
-        yonhapai: '인공지능'
-    }
+        yonhapai: '인공지능',
+    },
 });

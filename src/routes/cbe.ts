@@ -1,4 +1,4 @@
-import {CategoryCrawler} from "../classes/categoryCrawler";
+import { CategoryCrawler } from '../classes/categoryCrawler';
 
 export const cbe = new CategoryCrawler({
     departmentName: '화학생물공학부',
@@ -11,5 +11,5 @@ export const cbe = new CategoryCrawler({
         seminar: '세미나',
         free_board: '자유게시판',
     },
-    excludedTag: '미분류'
-})
+    excludedTag: '미분류',
+});

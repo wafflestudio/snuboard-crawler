@@ -34,9 +34,9 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
 export async function saveNotice(notice: Notice): Promise<Notice> {
     // populate notice.cursor and save notice
     if (!notice.hasId()) {
-        notice.cursor = notice.createdAt.getTime();
+        notice.cursor = -1;
         await notice.save();
-        notice.cursor += notice.id % 1000;
+        notice.cursor = notice.createdAt.getTime()+ notice.id % 1000;
     }
     await notice.save();
     return notice;

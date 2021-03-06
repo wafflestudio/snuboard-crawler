@@ -9,6 +9,8 @@ export abstract class Crawler {
 
     protected readonly departmentCode: string;
 
+    protected readonly departmentCollege: string;
+
     protected readonly baseUrl: string;
 
     protected readonly log;
@@ -16,6 +18,7 @@ export abstract class Crawler {
     protected constructor(initData: CrawlerInit) {
         this.departmentName = initData.departmentName;
         this.departmentCode = initData.departmentCode;
+        this.departmentCollege = initData.departmentCollege;
         this.baseUrl = initData.baseUrl;
 
         this.log = Apify.utils.log;

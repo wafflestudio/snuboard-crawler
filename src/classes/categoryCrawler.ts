@@ -157,7 +157,10 @@ export class CategoryCrawler extends Crawler {
         assert(connection.isConnected);
         this.log.info('Starting crawl for '.concat(this.departmentName));
         const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
-        const department = await getOrCreate(Department, { name: this.departmentName });
+        const department = await getOrCreate(Department, {
+            name: this.departmentName,
+            college: this.departmentCollege,
+        });
 
         // department-specific initialization urls
         const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };

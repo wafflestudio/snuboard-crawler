@@ -14,6 +14,7 @@ import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } fr
 import { Department } from '../../server/src/department/department.entity';
 import { strptime } from '../micro-strptime';
 import { CategoryCrawler } from '../classes/categoryCrawler';
+import { ENGINEERING } from '../constants';
 
 class EECrawler extends CategoryCrawler {
     private readonly excludeTags: string[];
@@ -139,6 +140,7 @@ export const ee = new EECrawler({
     departmentName: '전기정보공학부',
     departmentCode: 'ee',
     baseUrl: 'https://ee.snu.ac.kr/community/notice/',
+    departmentCollege: ENGINEERING,
     categoryTags: {
         academic: '학사',
         scholarship: '장학',

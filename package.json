@@ -3,6 +3,8 @@
 	"version": "0.0.2",
 	"description": "This is the crawler for SNUBoard project.",
 	"dependencies": {
+		"@octokit/auth-app": "^3.0.0",
+		"@octokit/core": "^3.2.5",
 		"apify": "^1.0.1",
 		"bcrypt": "^5.0.0",
 		"better-sqlite3-with-prebuilds": "^7.1.1",

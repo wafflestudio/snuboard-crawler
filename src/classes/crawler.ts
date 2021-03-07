@@ -2,7 +2,10 @@ import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import * as Apify from 'apify';
 import { RequestQueue } from 'apify';
 import { Connection } from 'typeorm';
+import assert from 'assert';
 import { CrawlerInit, SiteData } from '../types/custom-types';
+import { getOrCreate } from '../utils';
+import { Department } from '../../server/src/department/department.entity';
 import { appendIssue, createIssue } from '../github';
 
 export abstract class Crawler {
@@ -31,7 +34,24 @@ export abstract class Crawler {
 
     abstract handleList(context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void>;
 
-    abstract startCrawl(connection: Connection): Promise<void>;
+    startCrawl = async (connection: Connection): Promise<void> => {
+        assert(connection.isConnected);
+        this.log.info('Starting crawl for '.concat(this.departmentName));
+        const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
+        const department = await getOrCreate(Department, {
+            name: this.departmentName,
+            college: this.departmentCollege,
+        });
+
+        // department-specific initialization urls
+        const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
+        await requestQueue.addRequest({
+            url: this.baseUrl,
+            userData: siteData,
+        });
+
+        await this.runCrawler(requestQueue, this.handlePage, this.handleList);
+    };
 
     async runCrawler(
         requestQueue: RequestQueue,

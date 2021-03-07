@@ -8,11 +8,11 @@ import { ie } from './ie';
 import {ship} from "./ship";
 
 export const routeList: ((connection: Connection) => Promise<void>)[] = [
-    // cse.startCrawl,
-    // ee.startCrawl,
-    // cbe.startCrawl,
-    // ere.startCrawl,
-    // me.startCrawl,
-    // ie.startCrawl,
+    cse.startCrawl,
+    ee.startCrawl,
+    cbe.startCrawl,
+    ere.startCrawl,
+    me.startCrawl,
+    ie.startCrawl,
     ship.startCrawl
 ];

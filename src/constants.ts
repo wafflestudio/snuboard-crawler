@@ -13,6 +13,3 @@ export const PHARM = '약학대학';
 export const MUSIC = '음악대학';
 export const MEDICINE = '의과대학';
 export const CLS = '자유전공학부';
-
-// getTime of 1980-1-1
-export const CURSOR_RAND_MAX = 315500400000;

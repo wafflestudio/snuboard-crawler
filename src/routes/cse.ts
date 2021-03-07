@@ -1,16 +1,12 @@
 // filename must equal to first level of url domain.
 // e.g. cse.snu.ac.kr -> cse.ts
 
-import assert from 'assert';
-import * as Apify from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { Connection } from 'typeorm';
 import { Notice, File } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
-import { Department } from '../../server/src/department/department.entity';
 import { strptime } from '../micro-strptime';
 import { Crawler } from '../classes/crawler';
 import { ENGINEERING } from '../constants';

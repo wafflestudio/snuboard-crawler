@@ -13,7 +13,7 @@ export abstract class Crawler {
 
     protected readonly log;
 
-    protected constructor(initData: CrawlerInit) {
+    public constructor(initData: CrawlerInit) {
         this.departmentName = initData.departmentName;
         this.departmentCode = initData.departmentCode;
         this.baseUrl = initData.baseUrl;

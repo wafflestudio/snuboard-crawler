@@ -14,6 +14,7 @@ export interface CategoryTag {
 export interface CrawlerInit {
     departmentName: string;
     departmentCode: string;
+    departmentCollege: string;
     baseUrl: string;
 }
 

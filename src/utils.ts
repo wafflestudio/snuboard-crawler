@@ -1,4 +1,4 @@
-import { EntityTarget, getRepository } from 'typeorm';
+import { EntityTarget, getConnection, getRepository } from 'typeorm';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { RequestQueue } from 'apify';
 import * as Apify from 'apify';
@@ -33,12 +33,14 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
 
 export async function saveNotice(notice: Notice): Promise<Notice> {
     // populate notice.cursor and save notice
-    if (!notice.hasId()) {
-        notice.cursor = notice.createdAt.getTime();
-        await notice.save();
-        notice.cursor += notice.id % 1000;
-    }
-    await notice.save();
+    await getConnection().transaction('READ COMMITTED', async (transactionalEntityManager) => {
+        if (!notice.hasId()) {
+            notice.cursor = 0;
+            await transactionalEntityManager.save(notice);
+            notice.cursor = notice.createdAt.getTime() + (notice.id % 1000);
+        }
+        await transactionalEntityManager.save(notice);
+    });
     return notice;
 }
 
@@ -57,7 +59,7 @@ export async function runCrawler(
     const crawler = new Apify.CheerioCrawler({
         requestQueue,
         maxConcurrency: 1,
-        maxRequestRetries: 1,
+        maxRequestRetries: 0,
         handlePageFunction: async (context) => {
             try {
                 if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);

@@ -8,17 +8,14 @@ import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
 import { Connection } from 'typeorm';
 import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { CrawlerInit, SiteData } from '../types/custom-types';
+import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
 import { strptime } from '../micro-strptime';
 import { Crawler } from '../classes/crawler';
+import { ENGINEERING } from '../constants';
 
 class CSECrawler extends Crawler {
-    constructor(initData: CrawlerInit) {
-        super(initData);
-    }
-
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -42,12 +39,16 @@ class CSECrawler extends Crawler {
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
 
-            const fullDateString: string = $('div.submitted').text().split(',')[1].substring(8).trim();
-            // example: '2021/02/15 (월) 오후 7:21'
             try {
+                // example: '2021/02/15 (월) 오후 7:21'
+                const fullDateString: string = $('div.submitted').text().split(',')[1].substring(8).trim();
                 notice.createdAt = strptime(fullDateString, '%Y/%m/%d %a %p %H:%M');
-            } catch {
-                notice.createdAt = strptime(siteData.dateString, '%Y/%m/%d');
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    notice.createdAt = strptime(siteData.dateString, '%Y/%m/%d');
+                } else {
+                    throw error;
+                }
             }
 
             notice.isPinned = siteData.isPinned;
@@ -130,7 +131,10 @@ class CSECrawler extends Crawler {
         assert(connection.isConnected);
         this.log.info('Starting crawl for '.concat(this.departmentName));
         const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
-        const department = await getOrCreate(Department, { name: this.departmentName });
+        const department = await getOrCreate(Department, {
+            name: this.departmentName,
+            college: this.departmentCollege,
+        });
 
         // department-specific initialization urls
         const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
@@ -146,5 +150,6 @@ class CSECrawler extends Crawler {
 export const cse = new CSECrawler({
     departmentName: '컴퓨터공학부',
     departmentCode: 'cse', // this value must be equal to the filename
+    departmentCollege: ENGINEERING,
     baseUrl: 'https://cse.snu.ac.kr/department-notices',
 });

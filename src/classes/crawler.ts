@@ -9,16 +9,21 @@ export abstract class Crawler {
 
     protected readonly departmentCode: string;
 
+    protected readonly departmentCollege: string;
+
     protected readonly baseUrl: string;
 
     protected readonly log;
 
-    protected constructor(initData: CrawlerInit) {
+    public constructor(initData: CrawlerInit) {
         this.departmentName = initData.departmentName;
         this.departmentCode = initData.departmentCode;
+        this.departmentCollege = initData.departmentCollege;
         this.baseUrl = initData.baseUrl;
 
-        this.log = Apify.utils.log;
+        this.log = Apify.utils.log.child({
+            prefix: this.departmentName,
+        });
     }
 
     abstract handlePage(context: CheerioHandlePageInputs): Promise<void>;

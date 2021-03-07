@@ -43,7 +43,9 @@ class CSECrawler extends Crawler {
                 // example: '2021/02/15 (월) 오후 7:21'
                 const fullDateString: string = $('div.submitted').text().split(',')[1].substring(8).trim();
                 notice.createdAt = strptime(fullDateString, '%Y/%m/%d %a %p %H:%M');
-            } catch {
+            } catch (error){
+                if(!(error instanceof TypeError)){ throw error;}
+
                 notice.createdAt = strptime(siteData.dateString, '%Y/%m/%d');
             }
 

@@ -1,16 +1,12 @@
 // filename must equal to first level of url domain.
 // e.g. cse.snu.ac.kr -> cse.ts
 
-import assert from 'assert';
-import * as Apify from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { Connection } from 'typeorm';
 import { Notice, File } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
-import { Department } from '../../server/src/department/department.entity';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
 import { Crawler } from '../classes/crawler';
 import { ENGINEERING } from '../constants';
@@ -125,25 +121,6 @@ class CSECrawler extends Crawler {
                 userData: nextListSiteData,
             });
         }
-    };
-
-    startCrawl = async (connection: Connection): Promise<void> => {
-        assert(connection.isConnected);
-        this.log.info('Starting crawl for '.concat(this.departmentName));
-        const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
-        const department = await getOrCreate(Department, {
-            name: this.departmentName,
-            college: this.departmentCollege,
-        });
-
-        // department-specific initialization urls
-        const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
-        await this.addVaryingRequest(requestQueue, {
-            url: this.baseUrl,
-            userData: siteData,
-        });
-
-        await runCrawler(requestQueue, this.handlePage, this.handleList);
     };
 }
 

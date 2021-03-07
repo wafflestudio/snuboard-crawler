@@ -13,6 +13,7 @@ import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } fr
 import { Department } from '../../server/src/department/department.entity';
 import { strptime } from '../micro-strptime';
 import { Crawler } from '../classes/crawler';
+import { ENGINEERING } from '../constants';
 
 class CSECrawler extends Crawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
@@ -38,11 +39,13 @@ class CSECrawler extends Crawler {
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
 
-            const fullDateString: string = $('div.submitted').text().split(',')[1].substring(8).trim();
-            // example: '2021/02/15 (월) 오후 7:21'
             try {
+                // example: '2021/02/15 (월) 오후 7:21'
+                const fullDateString: string = $('div.submitted').text().split(',')[1].substring(8).trim();
                 notice.createdAt = strptime(fullDateString, '%Y/%m/%d %a %p %H:%M');
-            } catch {
+            } catch (error){
+                if(!(error instanceof TypeError)){ throw error;}
+
                 notice.createdAt = strptime(siteData.dateString, '%Y/%m/%d');
             }
 
@@ -126,5 +129,6 @@ class CSECrawler extends Crawler {
 export const cse = new CSECrawler({
     departmentName: '컴퓨터공학부',
     departmentCode: 'cse', // this value must be equal to the filename
+    departmentCollege: ENGINEERING,
     baseUrl: 'https://cse.snu.ac.kr/department-notices',
 });

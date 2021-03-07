@@ -13,6 +13,7 @@ import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
 import { CategoryCrawler } from '../classes/categoryCrawler.js';
+import { ENGINEERING } from '../constants';
 
 class IECrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
@@ -134,6 +135,7 @@ export const ie = new IECrawler({
     departmentName: '산업공학과',
     departmentCode: 'ie',
     baseUrl: 'http://ie.snu.ac.kr/ko/board/',
+    departmentCollege: ENGINEERING,
     categoryTags: {
         2: '학과 주요뉴스',
         3: '학과 행사',

@@ -26,7 +26,7 @@ class EECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -73,6 +73,8 @@ class EECrawler extends CategoryCrawler {
                 tags.push(title.slice(1, title.indexOf(']')).trim());
             }
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -82,7 +84,7 @@ class EECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
 
-        if ($) {
+        if ($ !== undefined) {
             $('div.bbs-blogstyle ul li').each((index, element) => {
                 const titleElement = $(element).children('a').first();
                 // const title = titleElement.children('strong').first().text();
@@ -128,6 +130,8 @@ class EECrawler extends CategoryCrawler {
                     userData: nextListSiteData,
                 });
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 }

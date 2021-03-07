@@ -1,14 +1,11 @@
 // filename must equal to first level of url domain.
 // e.g. ie.snu.ac.kr -> ie.ts
 
-import assert from 'assert';
-import * as Apify from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
-import { Connection } from 'typeorm';
 import { URL } from 'url';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
@@ -22,7 +19,7 @@ class IECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -74,6 +71,8 @@ class IECrawler extends CategoryCrawler {
             const category = new URL(url).pathname.split('/')[3]; // url.replace(BaseUrl, '').split('?')[0];
             const tags = [this.categoryTags[category]];
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -83,7 +82,7 @@ class IECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
 
-        if ($) {
+        if ($ !== undefined) {
             $('tbody tr').each((index, element) => {
                 const titleElement = $(element).children('td.views-field-title-field').children('a');
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
@@ -127,6 +126,8 @@ class IECrawler extends CategoryCrawler {
                     userData: nextListSiteData,
                 });
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 }

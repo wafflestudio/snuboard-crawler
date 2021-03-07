@@ -22,7 +22,7 @@ class CSECrawler extends Crawler {
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -79,6 +79,8 @@ class CSECrawler extends Crawler {
 
             const tags = $('div.field-name-field-tag').text().substring(4).trim().split(', ');
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -87,7 +89,7 @@ class CSECrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             $('table.views-table tbody tr').each((index, element) => {
                 const isPinned = $(element).attr('class')?.split(' ').includes('sticky') ?? false;
                 const titleElement = $($($(element).children('td')[0]).children('a'));
@@ -124,6 +126,8 @@ class CSECrawler extends Crawler {
                 url: nextList,
                 userData: nextListSiteData,
             });
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 

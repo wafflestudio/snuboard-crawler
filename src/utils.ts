@@ -57,7 +57,7 @@ export async function runCrawler(
     const crawler = new Apify.CheerioCrawler({
         requestQueue,
         maxConcurrency: 1,
-        maxRequestRetries: 1,
+        maxRequestRetries: 0,
         handlePageFunction: async (context) => {
             try {
                 if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);

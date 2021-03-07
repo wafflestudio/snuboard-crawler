@@ -19,7 +19,7 @@ class ShipCrawler extends Crawler {
 
         this.log.info('Page opened.', { url });
 
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -70,6 +70,8 @@ class ShipCrawler extends Crawler {
             const category = $('div.category a').text().trim();
             tags.push(category);
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -78,7 +80,7 @@ class ShipCrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             const urlInstance = new URL(url);
             const page: number = +(urlInstance.searchParams.get('page') ?? 1);
             // example:  /ko/board/Scholarship/page/2 => ['', 'ko', 'board', 'Scholarship','page','2']
@@ -129,6 +131,8 @@ class ShipCrawler extends Crawler {
                     userData: nextListSiteData,
                 });
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 }

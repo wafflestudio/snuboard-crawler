@@ -120,7 +120,7 @@ class CSECrawler extends Crawler {
                 isList: true,
                 dateString: '',
             };
-            await requestQueue.addRequest({
+            await this.addVaryingRequest(requestQueue, {
                 url: nextList,
                 userData: nextListSiteData,
             });
@@ -138,7 +138,7 @@ class CSECrawler extends Crawler {
 
         // department-specific initialization urls
         const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
-        await requestQueue.addRequest({
+        await this.addVaryingRequest(requestQueue, {
             url: this.baseUrl,
             userData: siteData,
         });

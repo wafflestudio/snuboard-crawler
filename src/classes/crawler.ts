@@ -2,7 +2,8 @@ import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { Connection } from 'typeorm';
 import * as Apify from 'apify';
-import { CrawlerInit } from '../types/custom-types';
+import Request, { RequestOptions } from 'apify/types/request';
+import { CrawlerInit, SiteData } from '../types/custom-types';
 
 export abstract class Crawler {
     protected readonly departmentName: string;
@@ -13,6 +14,8 @@ export abstract class Crawler {
 
     protected readonly baseUrl: string;
 
+    protected readonly startTime: number;
+
     protected readonly log;
 
     public constructor(initData: CrawlerInit) {
@@ -20,6 +23,7 @@ export abstract class Crawler {
         this.departmentCode = initData.departmentCode;
         this.departmentCollege = initData.departmentCollege;
         this.baseUrl = initData.baseUrl;
+        this.startTime = Math.floor(new Date().getTime() / 1000);
 
         this.log = Apify.utils.log.child({
             prefix: this.departmentName,
@@ -31,4 +35,9 @@ export abstract class Crawler {
     abstract handleList(context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void>;
 
     abstract startCrawl(connection: Connection): Promise<void>;
+
+    async addVaryingRequest(requestQueue: RequestQueue, requestLike: Request | RequestOptions): Promise<void> {
+        requestLike.uniqueKey = `${this.startTime}${requestLike.url}`;
+        await requestQueue.addRequest(requestLike);
+    }
 }

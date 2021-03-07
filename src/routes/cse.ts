@@ -8,17 +8,13 @@ import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
 import { Connection } from 'typeorm';
 import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { CrawlerInit, SiteData } from '../types/custom-types';
+import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
 import { strptime } from '../micro-strptime';
 import { Crawler } from '../classes/crawler';
 
 class CSECrawler extends Crawler {
-    constructor(initData: CrawlerInit) {
-        super(initData);
-    }
-
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;

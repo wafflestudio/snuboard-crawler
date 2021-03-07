@@ -1,18 +1,16 @@
 // filename must equal to first level of url domain.
 // e.g. cee.snu.ac.kr -> cee.ts
 
-import assert from 'assert';
-import * as Apify from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
-import { Connection } from 'typeorm';
 import { URL } from 'url';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
 import { CategoryCrawler } from '../classes/categoryCrawler.js';
+import { ENGINEERING } from '../constants';
 
 class CEECrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
@@ -165,6 +163,7 @@ class CEECrawler extends CategoryCrawler {
 export const cee = new CEECrawler({
     departmentName: '건설환경공학부',
     departmentCode: 'cee',
+    departmentCollege: ENGINEERING,
     baseUrl: 'https://cee.snu.ac.kr/bbs/board.php?bo_table=',
     categoryTags: {
         sub6_1: '공지사항',

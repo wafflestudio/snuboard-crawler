@@ -8,9 +8,9 @@ import { ie } from './ie';
 
 export const routeList: ((connection: Connection) => Promise<void>)[] = [
     cse.startCrawl,
-    // ee.startCrawl,
-    // cbe.startCrawl,
-    // ere.startCrawl,
-    // me.startCrawl,
-    // ie.startCrawl,
+    ee.startCrawl,
+    cbe.startCrawl,
+    ere.startCrawl,
+    me.startCrawl,
+    ie.startCrawl,
 ];

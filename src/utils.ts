@@ -1,4 +1,4 @@
-import { EntityTarget, getRepository } from 'typeorm';
+import { EntityTarget, getConnection, getRepository } from 'typeorm';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { RequestQueue } from 'apify';
 import * as Apify from 'apify';
@@ -6,7 +6,6 @@ import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
 import { SiteData } from './types/custom-types';
-import {CURSOR_RAND_MAX} from "./constants";
 
 export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPartial<T>, save = true): Promise<T> {
     // find T element with entityLike property if it exists.
@@ -34,12 +33,14 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
 
 export async function saveNotice(notice: Notice): Promise<Notice> {
     // populate notice.cursor and save notice
-    if (!notice.hasId()) {
-        notice.cursor = Math.floor(Math.random() * CURSOR_RAND_MAX);
-        await notice.save();
-        notice.cursor = notice.createdAt.getTime()+ notice.id % 1000;
-    }
-    await notice.save();
+    await getConnection().transaction('READ COMMITTED', async (transactionalEntityManager) => {
+        if (!notice.hasId()) {
+            notice.cursor = 0;
+            await transactionalEntityManager.save(notice);
+            notice.cursor = notice.createdAt.getTime() + (notice.id % 1000);
+        }
+        await transactionalEntityManager.save(notice);
+    });
     return notice;
 }
 

@@ -1,17 +1,13 @@
 // filename must equal to first level of url domain.
 // e.g. ee.snu.ac.kr -> ee.ts
 
-import assert from 'assert';
-import * as Apify from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
-import { Connection } from 'typeorm';
 import { URL } from 'url';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { CategoryCrawlerInit, CategoryTag, SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
-import { Department } from '../../server/src/department/department.entity';
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
+import { CategoryCrawlerInit, SiteData } from '../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
 import { CategoryCrawler } from '../classes/categoryCrawler';
 import { ENGINEERING } from '../constants';

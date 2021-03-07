@@ -3,13 +3,13 @@
 
 import assert from 'assert';
 import * as Apify from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { Connection } from 'typeorm';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
 import { strptime } from '../micro-strptime';
 import { Crawler } from '../classes/crawler';
@@ -143,7 +143,7 @@ class CSECrawler extends Crawler {
             userData: siteData,
         });
 
-        await runCrawler(requestQueue, this.handlePage, this.handleList);
+        await this.runCrawler(requestQueue, this.handlePage, this.handleList);
     };
 }
 

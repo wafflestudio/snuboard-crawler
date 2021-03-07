@@ -1,11 +1,7 @@
 import { EntityTarget, getConnection, getRepository } from 'typeorm';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
-import { RequestQueue } from 'apify';
-import * as Apify from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
-import { SiteData } from './types/custom-types';
 
 export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPartial<T>, save = true): Promise<T> {
     // find T element with entityLike property if it exists.
@@ -47,28 +43,4 @@ export async function saveNotice(notice: Notice): Promise<Notice> {
 export function absoluteLink(link: string | undefined, baseUrl: string): string | undefined {
     if (link === undefined) return undefined;
     return new URL(link, baseUrl).href;
-}
-
-export async function runCrawler(
-    requestQueue: RequestQueue,
-    handlePage: (inputs: CheerioHandlePageInputs) => Promise<void>,
-    handleList: (inputs: CheerioHandlePageInputs, queue: RequestQueue) => Promise<void>,
-): Promise<void> {
-    const timeout = 10;
-
-    const crawler = new Apify.CheerioCrawler({
-        requestQueue,
-        maxConcurrency: 1,
-        maxRequestRetries: 0,
-        handlePageFunction: async (context) => {
-            try {
-                if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);
-                else await handlePage(context);
-            } finally {
-                await Apify.utils.sleep(timeout * 1000);
-            }
-        },
-    });
-
-    await crawler.run();
 }

@@ -1,9 +1,11 @@
 import { Octokit } from '@octokit/core';
 import { createAppAuth } from '@octokit/auth-app';
 import { readFileSync } from 'fs';
-import * as Apify from 'apify';
 
-Apify.main(async () => {
+const ENV: string = process.env.NODE_ENV ?? 'dev';
+let octokit: Octokit | null;
+
+export async function createOctokit(): Promise<Octokit> {
     const auth = createAppAuth({
         appId: 103673,
         privateKey: readFileSync('crawler-issue.2021-03-06.private-key.pem').toString('utf-8'),
@@ -12,23 +14,48 @@ Apify.main(async () => {
 
     const installationAuthentication = await auth({ type: 'installation' });
 
-    const octokit = new Octokit({
+    octokit = new Octokit({
         auth: installationAuthentication.token,
     });
+    return octokit;
+}
 
-    const { data } = await octokit.request('GET /repos/{owner}/{repo}/issues', {
+export function getOctokit(): Octokit {
+    if (octokit === null) {
+        throw Error('getOctokit cannot be run before createOctokit');
+    }
+    return octokit;
+}
+
+export async function createIssue(title: string, body: string | undefined): Promise<number> {
+    if (ENV !== 'prod') {
+        return 0;
+    }
+
+    const response = await getOctokit().request('POST /repos/{owner}/{repo}/issues', {
         owner: 'wafflestudio',
         repo: 'snuboard-crawler',
+        title,
+        body,
     });
+    return response.data.number;
+}
 
-    console.log(data);
+export async function appendIssue(issueNumber: number, appendedBody: string): Promise<void> {
+    if (ENV !== 'prod') {
+        return;
+    }
 
-    const response = await octokit.request('POST /repos/{owner}/{repo}/issues', {
+    const response = await getOctokit().request('GET /repos/{owner}/{repo}/issues/{issue_number}', {
         owner: 'wafflestudio',
         repo: 'snuboard-crawler',
-        title: 'Test Issue from bot',
-        body: 'Test body from bot',
+        issue_number: issueNumber,
     });
-
-    console.log(response.data);
-});
+    const newBody = `${response.data.body}\n* * *\n${appendedBody}`;
+    await getOctokit().request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+        owner: 'wafflestudio',
+        repo: 'snuboard-crawler',
+        issue_number: issueNumber,
+        body: newBody,
+    });
+}

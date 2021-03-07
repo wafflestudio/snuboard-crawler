@@ -5,6 +5,7 @@ import { ee } from './ee';
 import { cbe } from './cbe';
 import { me } from './me';
 import { ie } from './ie';
+import { ship } from './ship';
 import { cee } from './cee';
 
 export const routeList: ((connection: Connection) => Promise<void>)[] = [
@@ -14,5 +15,6 @@ export const routeList: ((connection: Connection) => Promise<void>)[] = [
     ere.startCrawl,
     me.startCrawl,
     ie.startCrawl,
+    ship.startCrawl,
     cee.startCrawl,
 ];

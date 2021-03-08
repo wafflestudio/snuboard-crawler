@@ -122,7 +122,7 @@ class IECrawler extends CategoryCrawler {
                     isList: true,
                     dateString: '',
                 };
-                await requestQueue.addRequest({
+                await this.addVaryingRequest(requestQueue, {
                     url: nextList,
                     userData: nextListSiteData,
                 });

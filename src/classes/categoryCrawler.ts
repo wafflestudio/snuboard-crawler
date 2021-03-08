@@ -145,7 +145,7 @@ export class CategoryCrawler extends Crawler {
                     isList: true,
                     dateString: '',
                 };
-                await requestQueue.addRequest({
+                await this.addVaryingRequest(requestQueue, {
                     url: nextList,
                     userData: nextListSiteData,
                 });
@@ -168,7 +168,7 @@ export class CategoryCrawler extends Crawler {
 
         await Promise.all(
             categories.map(async (category) => {
-                await requestQueue.addRequest({
+                await this.addVaryingRequest(requestQueue, {
                     url: this.baseUrl + category,
                     userData: siteData,
                 });

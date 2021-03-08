@@ -7,7 +7,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
+import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
 import { CategoryCrawler } from '../classes/categoryCrawler.js';
 import { ENGINEERING } from '../constants';
@@ -23,27 +23,21 @@ class CEECrawler extends CategoryCrawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
+            $('img').each((index, element) => {
+                const imgSrc = $(element).attr('src');
+                $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
+            });
 
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const titleRe = /(\[.*\])*(.*)/;
+
             const titleText = $('div.bo_view').children('div.bo_view_1').children('div').text().trim();
-            const tagsAndTitle = titleText.match(titleRe);
             const category = new URL(url).searchParams.get('bo_table') ?? ''; // url.replace(BaseUrl, '').split('?')[0];
 
-            const title =
-                tagsAndTitle && tagsAndTitle[2] && this.categoryTags[category] === '공지사항'
-                    ? tagsAndTitle[2]
-                    : titleText;
+            const { title, tags } =
+                this.categoryTags[category] === '공지사항' ? parseTitle(titleText) : { title: titleText, tags: [] };
 
-            const tags =
-                tagsAndTitle && tagsAndTitle[1] && this.categoryTags[category] === '공지사항'
-                    ? tagsAndTitle[1]
-                          .split('[')
-                          .map((tag) => tag.replace(']', ''))
-                          .filter((tag) => tag.length > 0)
-                    : [];
             tags.push(this.categoryTags[category]);
 
             notice.title = title;
@@ -151,7 +145,7 @@ class CEECrawler extends CategoryCrawler {
                     isList: true,
                     dateString: '',
                 };
-                await requestQueue.addRequest({
+                await this.addVaryingRequest(requestQueue, {
                     url: nextList,
                     userData: nextListSiteData,
                 });

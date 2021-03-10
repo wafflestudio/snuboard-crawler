@@ -62,7 +62,7 @@ class EECrawler extends CategoryCrawler {
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = fileUrl;
+                    file.link = url;
                     files.push(file);
                 }
             });

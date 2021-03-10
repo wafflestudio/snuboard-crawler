@@ -140,4 +140,4 @@ export const math = new MathCrawler({
         notice: '공지사항',
         employment: '행사/취업'
     },
-})
+});

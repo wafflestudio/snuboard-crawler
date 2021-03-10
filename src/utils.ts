@@ -5,7 +5,7 @@ import * as Apify from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
-import { SiteData } from './types/custom-types';
+import { SiteData, TitleAndTags } from './types/custom-types';
 
 export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPartial<T>, save = true): Promise<T> {
     // find T element with entityLike property if it exists.
@@ -47,6 +47,21 @@ export async function saveNotice(notice: Notice): Promise<Notice> {
 export function absoluteLink(link: string | undefined, baseUrl: string): string | undefined {
     if (link === undefined) return undefined;
     return new URL(link, baseUrl).href;
+}
+
+export function parseTitle(titleText: string): TitleAndTags {
+    const titleRe = /((?:\[.*?\]\s{0,2})*)(.*)/;
+    const titleAndTags = titleText.trim().match(titleRe);
+    const title = titleAndTags && titleAndTags[2] ? titleAndTags[2].trim() : titleText.trim();
+
+    const tags =
+        titleAndTags && titleAndTags[1]
+            ? titleAndTags[1]
+                  .split('[')
+                  .map((tag) => tag.replace(']', '').trim())
+                  .filter((tag) => tag.length)
+            : [];
+    return { title, tags };
 }
 
 export async function runCrawler(

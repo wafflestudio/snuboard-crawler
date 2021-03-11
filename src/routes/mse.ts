@@ -89,6 +89,7 @@ class MSECrawler extends CategoryCrawler {
                 pageUrl.searchParams.set('board_num', noticeIdx[1]);
                 pageUrl.searchParams.delete('page');
                 const link = pageUrl.href;
+
                 const tag = $(element).find('td:nth-child(1)').text();
                 if (link === undefined) return;
                 const dateString = $(element).children('td').slice(3, 4).text().trim();

@@ -3,6 +3,7 @@ import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { RequestQueue } from 'apify';
 import * as Apify from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { URL } from 'url';
 import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
 import { SiteData, TitleAndTags } from './types/custom-types';
@@ -47,6 +48,16 @@ export async function saveNotice(notice: Notice): Promise<Notice> {
 export function absoluteLink(link: string | undefined, baseUrl: string): string | undefined {
     if (link === undefined) return undefined;
     return new URL(link, baseUrl).href;
+}
+
+export function removeUrlPageParam(link: string | undefined): string | undefined {
+    if (link === undefined) return undefined;
+    const pageUrl = new URL(link);
+    if (!pageUrl) return undefined;
+    pageUrl.searchParams.delete('page');
+    link = pageUrl.href;
+
+    return link;
 }
 
 export function parseTitle(titleText: string): TitleAndTags {

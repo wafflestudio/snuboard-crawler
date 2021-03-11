@@ -5,12 +5,12 @@ import { RequestQueue } from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { URL } from 'url';
-import { File, Notice } from '../../server/src/notice/notice.entity.js';
-import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { CategoryCrawler } from '../classes/categoryCrawler.js';
-import { ENGINEERING } from '../constants';
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice, removeUrlPageParam } from '../../utils';
+import { strptime } from '../../micro-strptime';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { ENGINEERING } from '../../constants';
 
 class CEECrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
@@ -111,11 +111,8 @@ class CEECrawler extends CategoryCrawler {
 
                     const titleElement = $(element).children('td.subject').children('nobr').children('a');
 
-                    let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                    const link = removeUrlPageParam(absoluteLink(titleElement.attr('href'), request.loadedUrl));
                     if (link === undefined) return;
-                    const pageUrl = new URL(link);
-                    pageUrl.searchParams.delete('page');
-                    link = pageUrl.href;
 
                     const dateString = $(element).children('td.datetime').text().trim();
                     const newSiteData: SiteData = {

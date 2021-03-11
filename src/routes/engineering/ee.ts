@@ -1,18 +1,29 @@
 // filename must equal to first level of url domain.
-// e.g. architecture.snu.ac.kr -> architecture.ts
+// e.g. ee.snu.ac.kr -> ee.ts
 
+import assert from 'assert';
+import * as Apify from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
+import { Connection } from 'typeorm';
 import { URL } from 'url';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { CategoryCrawlerInit, CategoryTag, SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { ENGINEERING } from '../constants';
-import { Crawler } from '../classes/crawler';
+import { Notice, File } from '../../../server/src/notice/notice.entity.js';
+import { CategoryCrawlerInit, CategoryTag, SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice, removeUrlPageParam } from '../../utils';
+import { Department } from '../../../server/src/department/department.entity';
+import { strptime } from '../../micro-strptime';
+import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { ENGINEERING } from '../../constants';
 
-class ArchitectureCrawler extends Crawler {
+class EECrawler extends CategoryCrawler {
+    private readonly excludeTags: string[];
+
+    constructor(initData: CategoryCrawlerInit) {
+        super(initData);
+        this.excludeTags = ['sugang', 'yonhapai'];
+    }
+
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -23,32 +34,35 @@ class ArchitectureCrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
+            $('img').each((index, element) => {
+                const imgSrc = $(element).attr('src');
+                $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
+            });
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const title = $('div.body_title div.kr p').text().trim();
+            const title = $('div#bbs-view-wrap').children('h1').text();
             notice.title = title;
-            const contentElement = $('div.body_text.kr_body.lev3body');
+            const contentElement = $('div.cnt');
 
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
 
-            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
+            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
             notice.isPinned = siteData.isPinned;
             notice.link = url;
 
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('div.body_text.kr_body.attachment_files a').each((index, element) => {
-                const fileUrl = $(element).attr('href');
+            $('div.att-file ul li div').each((index, element) => {
+                const fileUrl = $(element).children('a').attr('href');
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = fileUrl.endsWith('.pdf') ? fileUrl : request.loadedUrl;
+                    file.link = url;
                     files.push(file);
                 }
             });
@@ -60,7 +74,11 @@ class ArchitectureCrawler extends Crawler {
                 }),
             );
 
-            const tags = ['공지사항'];
+            const category = url.replace(this.baseUrl, '').split('?')[0];
+            const tags = [this.categoryTags[category]];
+            if (!this.excludeTags.includes(category) && title.startsWith('[')) {
+                tags.push(title.slice(1, title.indexOf(']')).trim());
+            }
             await getOrCreateTags(tags, notice, siteData.department);
         }
     };
@@ -70,23 +88,18 @@ class ArchitectureCrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        const urlInstance = new URL(url, this.baseUrl);
-        if (!urlInstance) return;
-        const page = +(urlInstance.pathname.split('/')[4] ?? 1);
 
         if ($) {
-            $('div.listbox_pinup, div.listbox').each((index, element) => {
-                const isPinned = $(element).attr('class') === 'listbox_pinup';
-                if (page > 1 && isPinned) return;
-                const titleElement = $(element).find('div.kr a');
+            $('div.bbs-blogstyle ul li').each((index, element) => {
+                const titleElement = $(element).children('a').first();
                 // const title = titleElement.children('strong').first().text();
-                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                const link = removeUrlPageParam(absoluteLink(titleElement.attr('href'), request.loadedUrl));
                 if (link === undefined) return;
-                const preParseString = $(element).find('div.listbox_date.lev3.kr').text();
-                const dateString = preParseString.substring(preParseString.search(/\d{4}.\d{2}.\d{2}/)).trim();
+                const dateString = $(element).find('p.date span').text().split('l')[1].trim();
+
                 const newSiteData: SiteData = {
                     department: siteData.department,
-                    isPinned,
+                    isPinned: false,
                     isList: false,
                     dateString,
                 };
@@ -97,13 +110,19 @@ class ArchitectureCrawler extends Crawler {
                 });
             });
 
-            const nextPageElem = $('div.navigator div.wp-pagenavi a.page.larger');
+            const endElement = $('div.pagination-01').children('a.direction.next').last().attr('href');
+            const endUrl = absoluteLink(endElement, request.loadedUrl);
 
-            if (nextPageElem.length) {
-                const nextPath = urlInstance.pathname.split('/').slice(0, 3).join('/');
+            if (!endUrl) return;
+            const endUrlInstance = new URL(endUrl);
+            const urlInstance = new URL(url);
+            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
+            const endPage = endUrlInstance.searchParams.get('page');
 
-                const nextList = absoluteLink(`${nextPath}/page/${page + 1}`, request.loadedUrl);
-                if (!nextList) return;
+            if (endPage && page < +endPage) {
+                urlInstance.searchParams.set('page', (page + 1).toString());
+
+                const nextList: string = urlInstance.href;
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -120,9 +139,18 @@ class ArchitectureCrawler extends Crawler {
     };
 }
 
-export const architecture = new ArchitectureCrawler({
-    departmentName: '건축학과',
-    departmentCode: 'architecture',
-    baseUrl: 'https://architecture.snu.ac.kr/activities/notice/',
+export const ee = new EECrawler({
+    departmentName: '전기정보공학부',
+    departmentCode: 'ee',
+    baseUrl: 'https://ee.snu.ac.kr/community/notice/',
     departmentCollege: ENGINEERING,
+    categoryTags: {
+        academic: '학사',
+        scholarship: '장학',
+        admissions: '입시&기타',
+        campuslife: '대학생활',
+        jobs: '취업&전문연',
+        sugang: '수강',
+        yonhapai: '인공지능',
+    },
 });

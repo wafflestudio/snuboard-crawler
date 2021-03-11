@@ -1,17 +1,14 @@
-// filename must equal to first level of url domain.
-// e.g. cse.snu.ac.kr -> cse.ts
-
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { Crawler } from '../classes/crawler';
-import { ENGINEERING } from '../constants';
+import { RequestQueue } from 'apify';
+import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { SCIENCE } from '../../constants';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice, removeUrlPageParam } from '../../utils';
+import { File, Notice } from '../../../server/src/notice/notice.entity';
+import { strptime } from '../../micro-strptime';
 
-class ShipCrawler extends Crawler {
+class MathCrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -27,20 +24,22 @@ class ShipCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            notice.title = $('div.title h1 a').text().trim();
-            const contentElement = $('div.xe_content');
-            let content = contentElement.html() ?? '';
+            notice.title = $('div.titleAndUser div.title h2 a, div.titleAndUser div.title h1 a ').text().trim();
+            const contentElement = $('div.contentBody div.xe_content');
+            let content;
+            if ($('div.contentBody div.xe_content div.document_popup_menu').length) {
+                contentElement.find('div.document_popup_menu').remove();
+                content = contentElement.html() ?? '';
+            } else {
+                content = contentElement.html() ?? '';
+            }
             content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
-
-            try {
-                const fullDateString: string = $('div.date').text().trim();
-                notice.createdAt = strptime(fullDateString, '%Y.%m.%d %H:%M:%S');
-            } catch {
-                notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
-            }
+            const fullDateString: string = $('div.dateAndCount div.date').text().trim();
+            // example: '2021-02-26 11:34:01'
+            notice.createdAt = strptime(fullDateString, '%Y.%m.%d %H:%M:%S');
 
             notice.isPinned = siteData.isPinned;
             notice.link = url;
@@ -53,7 +52,7 @@ class ShipCrawler extends Crawler {
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = url;
+                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? '';
                     files.push(file);
                 }
             });
@@ -67,8 +66,11 @@ class ShipCrawler extends Crawler {
             );
 
             const tags: string[] = [];
-            const category = $('div.category a').text().trim();
-            tags.push(category);
+            const urlInstance = new URL(request.loadedUrl);
+            const category = urlInstance.searchParams.get('mid');
+            if (category && this.categoryTags[category]) {
+                tags.push(this.categoryTags[category]);
+            }
             await getOrCreateTags(tags, notice, siteData.department);
         }
     };
@@ -79,28 +81,18 @@ class ShipCrawler extends Crawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
         if ($) {
-            const urlInstance = new URL(url);
-            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
-            // example:  /ko/board/Scholarship/page/2 => ['', 'ko', 'board', 'Scholarship','page','2']
-
-            $('table.boardList tr').each((index, element) => {
-                const isPinned = $(element).children('td.notice').length !== 0;
-                if (page > 1 && isPinned) return;
-
+            $('table.boardList tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td.title a').first();
                 // const title = titleElement.text();
-                let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+
+                const link = removeUrlPageParam(absoluteLink(titleElement.attr('href'), request.loadedUrl));
                 if (link === undefined) return;
-                const pageUrl = new URL(link);
-                pageUrl.searchParams.delete('page');
-                link = pageUrl.href;
-                const dateString = $(element).children('td.date').text();
 
                 const newSiteData: SiteData = {
                     department: siteData.department,
-                    isPinned,
+                    isPinned: false,
                     isList: false,
-                    dateString,
+                    dateString: '',
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -109,26 +101,29 @@ class ShipCrawler extends Crawler {
                 });
             });
 
-            const endUrlInstance = new URL(absoluteLink($('div.pagination.a1 a.nextEnd').attr('href'), url) ?? '');
-            if (!endUrlInstance) return;
+            const endElement = $('div.pagination.a1 a.nextEnd');
+            const endUrl = absoluteLink(endElement.attr('href'), request.loadedUrl);
+            const endUrlInstance = new URL(endUrl ?? '');
+            const urlInstance = new URL(request.loadedUrl);
+            if (!endUrlInstance || !urlInstance) return;
 
             const endPage = +(endUrlInstance.searchParams.get('page') ?? 1);
-            // +lastNoticeId === 1  <==> loaded page is the last page
+            const page = +(urlInstance.searchParams.get('page') ?? 1);
+
             if (page < endPage) {
-                const nextListInstance = new URL(urlInstance.href);
-                nextListInstance.searchParams.set('page', (page + 1).toString());
+                const nextUrlInstance = new URL(urlInstance.href);
+                nextUrlInstance.searchParams.set('page', (page + 1).toString());
+                const nextList = nextUrlInstance.href;
 
-                this.log.info('Enqueueing list', { nextList: nextListInstance.href });
-
+                this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
                     isPinned: false,
                     isList: true,
                     dateString: '',
                 };
-
-                await requestQueue.addRequest({
-                    url: nextListInstance.href,
+                await this.addVaryingRequest(requestQueue, {
+                    url: nextList,
                     userData: nextListSiteData,
                 });
             }
@@ -136,9 +131,13 @@ class ShipCrawler extends Crawler {
     };
 }
 
-export const ship = new ShipCrawler({
-    departmentName: '조선해양공학과',
-    departmentCode: 'ship', // this value must be equal to the filename,
-    baseUrl: 'http://ship.snu.ac.kr/index.php?mid=Notice',
-    departmentCollege: ENGINEERING,
+export const math = new MathCrawler({
+    departmentName: '수리과학부',
+    departmentCode: 'math', // this value must be equal to the filename
+    departmentCollege: SCIENCE,
+    baseUrl: 'http://www.math.snu.ac.kr/board/index.php?mid=',
+    categoryTags: {
+        notice: '공지사항',
+        employment: '행사/취업',
+    },
 });

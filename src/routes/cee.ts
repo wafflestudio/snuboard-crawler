@@ -111,8 +111,11 @@ class CEECrawler extends CategoryCrawler {
 
                     const titleElement = $(element).children('td.subject').children('nobr').children('a');
 
-                    const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                    let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                     if (link === undefined) return;
+                    const pageUrl = new URL(link);
+                    pageUrl.searchParams.delete('page');
+                    link = pageUrl.href;
 
                     const dateString = $(element).children('td.datetime').text().trim();
                     const newSiteData: SiteData = {

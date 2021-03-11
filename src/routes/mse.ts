@@ -84,11 +84,12 @@ class MSECrawler extends CategoryCrawler {
                 const noticeIdxRe = /viewData\('([0-9]+)'\)/;
                 const noticeIdx = titleElement.attr('onclick')?.match(noticeIdxRe);
                 if (!noticeIdx) return;
-                const nextUrl = new URL(url);
-                nextUrl.searchParams.set('mode', 'view');
-                nextUrl.searchParams.set('board_num', noticeIdx[1]);
-                nextUrl.searchParams.delete('page');
-                const link = nextUrl.href;
+                const pageUrl = new URL(url);
+                pageUrl.searchParams.set('mode', 'view');
+                pageUrl.searchParams.set('board_num', noticeIdx[1]);
+                pageUrl.searchParams.delete('page');
+                const link = pageUrl.href;
+
                 const tag = $(element).find('td:nth-child(1)').text();
                 if (link === undefined) return;
                 const dateString = $(element).children('td').slice(3, 4).text().trim();

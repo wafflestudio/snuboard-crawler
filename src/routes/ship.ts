@@ -53,7 +53,7 @@ class ShipCrawler extends Crawler {
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? '';
+                    file.link = url;
                     files.push(file);
                 }
             });

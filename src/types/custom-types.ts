@@ -5,6 +5,7 @@ export interface SiteData {
     isPinned: boolean;
     isList: boolean;
     dateString: string;
+    tag?: string;
 }
 
 export interface CategoryTag {

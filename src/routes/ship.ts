@@ -89,8 +89,11 @@ class ShipCrawler extends Crawler {
 
                 const titleElement = $(element).find('td.title a').first();
                 // const title = titleElement.text();
-                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
+                const pageUrl = new URL(link);
+                pageUrl.searchParams.delete('page');
+                link = pageUrl.href;
                 const dateString = $(element).children('td.date').text();
 
                 const newSiteData: SiteData = {

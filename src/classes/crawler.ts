@@ -3,10 +3,11 @@ import * as Apify from 'apify';
 import { RequestQueue } from 'apify';
 import { Connection } from 'typeorm';
 import assert from 'assert';
+import Request, { RequestOptions } from 'apify/types/request';
+import { appendIssue, createIssue } from '../github';
 import { CrawlerInit, SiteData } from '../types/custom-types';
 import { getOrCreate } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
-import { appendIssue, createIssue } from '../github';
 
 export abstract class Crawler {
     protected readonly departmentName: string;
@@ -17,6 +18,8 @@ export abstract class Crawler {
 
     protected readonly baseUrl: string;
 
+    protected readonly startTime: number;
+
     protected readonly log;
 
     public constructor(initData: CrawlerInit) {
@@ -24,6 +27,7 @@ export abstract class Crawler {
         this.departmentCode = initData.departmentCode;
         this.departmentCollege = initData.departmentCollege;
         this.baseUrl = initData.baseUrl;
+        this.startTime = Math.floor(new Date().getTime() / 1000);
 
         this.log = Apify.utils.log.child({
             prefix: this.departmentName,
@@ -45,7 +49,7 @@ export abstract class Crawler {
 
         // department-specific initialization urls
         const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
-        await requestQueue.addRequest({
+        await this.addVaryingRequest(requestQueue, {
             url: this.baseUrl,
             userData: siteData,
         });
@@ -98,5 +102,10 @@ export abstract class Crawler {
         });
 
         await crawler.run();
+    }
+
+    async addVaryingRequest(requestQueue: RequestQueue, requestLike: Request | RequestOptions): Promise<void> {
+        requestLike.uniqueKey = `${this.startTime}${requestLike.url}`;
+        await requestQueue.addRequest(requestLike);
     }
 }

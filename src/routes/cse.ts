@@ -73,8 +73,17 @@ class CSECrawler extends Crawler {
                 }),
             );
 
-            const tags = $('div.field-name-field-tag').text().substring(4).trim().split(', ');
-            await getOrCreateTags(tags, notice, siteData.department);
+            const tagString = $('div.field-name-field-tag').text();
+            if (tagString.includes('태그:')) {
+                const tags = tagString
+                    .replace('태그:', '')
+                    .split(',')
+                    .map((tag) => tag.trim())
+                    .filter((value) => value.length > 0);
+                await getOrCreateTags(tags, notice, siteData.department);
+            } else {
+                throw new TypeError(`tagString ${tagString} does not include '태그:'`);
+            }
         } else {
             throw new TypeError('Selector is undefined');
         }
@@ -90,7 +99,7 @@ class CSECrawler extends Crawler {
                 const isPinned = $(element).attr('class')?.split(' ').includes('sticky') ?? false;
                 const titleElement = $($($(element).children('td')[0]).children('a'));
                 // const title = titleElement.text();
-                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl)?.replace('/en/', '/');
                 if (link === undefined) return;
                 const dateString = $($(element).children('td')[1]).text().trim();
                 // const viewCount = +$($(element).children('td')[2]).text().trim() ?? 0;
@@ -118,7 +127,7 @@ class CSECrawler extends Crawler {
                 isList: true,
                 dateString: '',
             };
-            await requestQueue.addRequest({
+            await this.addVaryingRequest(requestQueue, {
                 url: nextList,
                 userData: nextListSiteData,
             });

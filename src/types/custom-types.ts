@@ -5,6 +5,7 @@ export interface SiteData {
     isPinned: boolean;
     isList: boolean;
     dateString: string;
+    tag?: string;
 }
 
 export interface CategoryTag {
@@ -21,4 +22,9 @@ export interface CrawlerInit {
 export interface CategoryCrawlerInit extends CrawlerInit {
     categoryTags: CategoryTag;
     excludedTag?: string;
+}
+
+export interface TitleAndTags {
+    title: string;
+    tags: string[];
 }

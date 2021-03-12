@@ -1,15 +1,29 @@
 import { Octokit } from '@octokit/core';
 import { createAppAuth } from '@octokit/auth-app';
 import { readFileSync } from 'fs';
+import { ENV } from './env';
 
-const ENV: string = process.env.NODE_ENV ?? 'dev';
 let octokit: Octokit | null;
+if (ENV === 'ci') throw Error('github.ts should not be imported in ci');
+
+const appId: number = +(process.env.GITHUB_APP_ID ?? '-1');
+const privateKeyPath: string = process.env.GITHUB_PRIVATE_KEY_PATH ?? '';
+const installationId: number = +(process.env.GITHUB_INSTALLATION_ID ?? '-1');
+const owner: string = process.env.GITHUB_REPO_OWNER ?? '';
+const repo: string = process.env.GITHUB_REPO_NAME ?? '';
+
+if (privateKeyPath === '' || owner === '' || repo === '') {
+    throw Error('env is improperly configured');
+}
+if (appId === -1 || installationId === -1) {
+    throw Error('env is improperly configured');
+}
 
 export async function createOctokit(): Promise<Octokit> {
     const auth = createAppAuth({
-        appId: 103673,
-        privateKey: readFileSync('crawler-issue.2021-03-06.private-key.pem').toString('utf-8'),
-        installationId: 15160519,
+        appId,
+        privateKey: readFileSync(privateKeyPath).toString('utf-8'),
+        installationId,
     });
 
     const installationAuthentication = await auth({ type: 'installation' });
@@ -33,8 +47,8 @@ export async function createIssue(title: string, body: string | undefined): Prom
     }
 
     const response = await getOctokit().request('POST /repos/{owner}/{repo}/issues', {
-        owner: 'wafflestudio',
-        repo: 'snuboard-crawler',
+        owner,
+        repo,
         title,
         body,
     });
@@ -47,8 +61,8 @@ export async function appendIssue(issueNumber: number, appendedBody: string): Pr
     }
 
     const response = await getOctokit().request('GET /repos/{owner}/{repo}/issues/{issue_number}', {
-        owner: 'wafflestudio',
-        repo: 'snuboard-crawler',
+        owner,
+        repo,
         issue_number: issueNumber,
     });
     const newBody = `${response.data.body}\n* * *\n${appendedBody}`;

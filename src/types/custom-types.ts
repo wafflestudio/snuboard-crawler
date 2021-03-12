@@ -1,4 +1,4 @@
-import { Department, Tag } from '../../server/src/department/department.entity';
+import { Department } from '../../server/src/department/department.entity';
 
 export interface SiteData {
     department: Department;

@@ -4,8 +4,9 @@ import { RequestQueue } from 'apify';
 import { Connection } from 'typeorm';
 import assert from 'assert';
 import Request, { RequestOptions } from 'apify/types/request';
+import { appendIssue, createIssue } from '../github';
 import { CrawlerInit, SiteData } from '../types/custom-types';
-import { getOrCreate, runCrawler } from '../utils';
+import { getOrCreate } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
 
 export abstract class Crawler {
@@ -53,8 +54,55 @@ export abstract class Crawler {
             userData: siteData,
         });
 
-        await runCrawler(requestQueue, this.handlePage, this.handleList);
+        await this.runCrawler(requestQueue, this.handlePage, this.handleList);
     };
+
+    async runCrawler(
+        requestQueue: RequestQueue,
+        handlePage: (inputs: CheerioHandlePageInputs) => Promise<void>,
+        handleList: (inputs: CheerioHandlePageInputs, queue: RequestQueue) => Promise<void>,
+    ): Promise<void> {
+        const timeout = 10;
+        const errorIssueMapping = new Map<string, number>();
+        const startTimeString = `${new Date().toLocaleString('ko-KR', {
+            timeZone: 'Asia/Seoul',
+        })} KST`;
+        const crawler = new Apify.CheerioCrawler({
+            requestQueue,
+            maxConcurrency: 1,
+            maxRequestRetries: 0,
+            handlePageFunction: async (context) => {
+                try {
+                    if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);
+                    else await handlePage(context);
+                } catch (err) {
+                    const errString = err.toString();
+                    const issueNumber = errorIssueMapping.get(errString);
+                    const errDetail = `\`\`\`\n${err.stack}\nwhile processing\n${JSON.stringify(
+                        context.request,
+                        null,
+                        2,
+                    )}\n\`\`\``;
+                    if (issueNumber !== undefined) {
+                        await appendIssue(issueNumber, errDetail);
+                    } else {
+                        errorIssueMapping.set(
+                            errString,
+                            await createIssue(
+                                `[${this.departmentName}] ${errString}`,
+                                `Crawler started at ${startTimeString} raised following errors:\n\n${errDetail}`,
+                            ),
+                        );
+                    }
+                    throw err;
+                } finally {
+                    await Apify.utils.sleep(timeout * 1000);
+                }
+            },
+        });
+
+        await crawler.run();
+    }
 
     async addVaryingRequest(requestQueue: RequestQueue, requestLike: Request | RequestOptions): Promise<void> {
         requestLike.uniqueKey = `${this.startTime}${requestLike.url}`;

@@ -4,7 +4,7 @@
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
 import { SiteData } from '../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
@@ -18,7 +18,7 @@ class CSECrawler extends Crawler {
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -84,6 +84,8 @@ class CSECrawler extends Crawler {
             } else {
                 throw new TypeError(`tagString ${tagString} does not include '태그:'`);
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -92,7 +94,7 @@ class CSECrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             $('table.views-table tbody tr').each((index, element) => {
                 const isPinned = $(element).attr('class')?.split(' ').includes('sticky') ?? false;
                 const titleElement = $($($(element).children('td')[0]).children('a'));
@@ -129,6 +131,8 @@ class CSECrawler extends Crawler {
                 url: nextList,
                 userData: nextListSiteData,
             });
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 }

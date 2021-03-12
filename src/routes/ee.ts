@@ -1,17 +1,13 @@
 // filename must equal to first level of url domain.
 // e.g. ee.snu.ac.kr -> ee.ts
 
-import assert from 'assert';
-import * as Apify from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
-import { Connection } from 'typeorm';
 import { URL } from 'url';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { CategoryCrawlerInit, CategoryTag, SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
-import { Department } from '../../server/src/department/department.entity';
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
+import { CategoryCrawlerInit, SiteData } from '../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { strptime } from '../micro-strptime';
 import { CategoryCrawler } from '../classes/categoryCrawler';
 import { ENGINEERING } from '../constants';
@@ -30,7 +26,7 @@ class EECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -80,6 +76,8 @@ class EECrawler extends CategoryCrawler {
                 tags.push(title.slice(1, title.indexOf(']')).trim());
             }
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -89,7 +87,7 @@ class EECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
 
-        if ($) {
+        if ($ !== undefined) {
             $('div.bbs-blogstyle ul li').each((index, element) => {
                 const titleElement = $(element).children('a').first();
                 // const title = titleElement.children('strong').first().text();
@@ -138,6 +136,8 @@ class EECrawler extends CategoryCrawler {
                     userData: nextListSiteData,
                 });
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 }

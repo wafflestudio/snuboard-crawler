@@ -19,7 +19,7 @@ class MSECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -69,6 +69,8 @@ class MSECrawler extends CategoryCrawler {
                 tags.push(this.categoryTags[category]);
             }
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -78,7 +80,7 @@ class MSECrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
 
-        if ($) {
+        if ($ !== undefined) {
             $('tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td:nth-child(2) a');
                 const noticeIdxRe = /viewData\('([0-9]+)'\)/;
@@ -131,6 +133,8 @@ class MSECrawler extends CategoryCrawler {
                     userData: nextListSiteData,
                 });
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 }

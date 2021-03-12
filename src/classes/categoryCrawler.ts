@@ -1,13 +1,13 @@
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
+import * as Apify from 'apify';
 import { RequestQueue } from 'apify';
 import { Connection } from 'typeorm';
 import assert from 'assert';
-import * as Apify from 'apify';
 import { strptime } from '../micro-strptime';
 import { File, Notice } from '../../server/src/notice/notice.entity';
-import { absoluteLink, getOrCreate, getOrCreateTags, runCrawler, saveNotice } from '../utils';
-import { CategoryTag, SiteData, CategoryCrawlerInit } from '../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
+import { CategoryCrawlerInit, CategoryTag, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
 
@@ -29,7 +29,7 @@ export class CategoryCrawler extends Crawler {
 
         this.log.info('Page opened.', { url });
 
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -86,6 +86,8 @@ export class CategoryCrawler extends Crawler {
             }
             tags = tags.filter((tag) => tag !== this.excludedTag);
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -94,7 +96,7 @@ export class CategoryCrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             const urlInstance = new URL(url);
             const page: number = +(urlInstance.pathname.split('/')[5] ?? 1);
             // example:  /ko/board/Scholarship/page/2 => ['', 'ko', 'board', 'Scholarship','page','2']
@@ -150,6 +152,8 @@ export class CategoryCrawler extends Crawler {
                     userData: nextListSiteData,
                 });
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -175,6 +179,6 @@ export class CategoryCrawler extends Crawler {
             }),
         );
 
-        await runCrawler(requestQueue, this.handlePage, this.handleList);
+        await this.runCrawler(requestQueue, this.handlePage, this.handleList);
     };
 }

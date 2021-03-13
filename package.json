@@ -42,7 +42,7 @@
 		"clean": "rm -rf apify_storage",
 		"test": "jest",
 		"coverage": "jest --coverage",
-		"update": "git submodule update"
+		"update": "git submodule update --remote --merge"
 	},
 	"lint-staged": {
 		"src/**/*.{js,json,ts}": [

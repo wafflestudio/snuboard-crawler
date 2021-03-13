@@ -4,12 +4,12 @@
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { Crawler } from '../classes/crawler';
-import { ENGINEERING } from '../constants';
+import { Notice, File } from '../../../server/src/notice/notice.entity.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { strptime } from '../../micro-strptime';
+import { Crawler } from '../../classes/crawler';
+import { ENGINEERING } from '../../constants';
 
 class ShipCrawler extends Crawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {

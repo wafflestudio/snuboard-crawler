@@ -1,25 +1,25 @@
 // filename must equal to first level of url domain.
-// e.g. architecture.snu.ac.kr -> architecture.ts
+// e.g. mse.snu.ac.kr -> mse.ts
 
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
 import { URL } from 'url';
-import { File, Notice } from '../../server/src/notice/notice.entity.js';
-import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { ENGINEERING } from '../constants';
-import { Crawler } from '../classes/crawler';
+import { Notice, File } from '../../../server/src/notice/notice.entity.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { strptime } from '../../micro-strptime';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { ENGINEERING } from '../../constants';
 
-class ArchitectureCrawler extends Crawler {
+class MSECrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
-        if ($) {
+        if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
@@ -27,28 +27,28 @@ class ArchitectureCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const title = $('div.body_title div.kr p').text().trim();
+            const title = $('td[id="fn"]').text();
             notice.title = title;
-            const contentElement = $('div.body_text.kr_body.lev3body');
-
+            const contentElement = $('td[class="s_default_view_body_2"]').find('td');
+            contentElement.find('div[class="mnSns"]').remove();
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
 
-            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
             notice.isPinned = siteData.isPinned;
             notice.link = url;
 
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('div.body_text.kr_body.attachment_files a').each((index, element) => {
+            $('#boardSkin_s_default_view > tbody > tr:nth-child(1) > td a').each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = fileUrl.endsWith('.pdf') ? fileUrl : request.loadedUrl;
+                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? '';
                     files.push(file);
                 }
             });
@@ -60,8 +60,17 @@ class ArchitectureCrawler extends Crawler {
                 }),
             );
 
-            const tags = ['공지사항'];
+            const category = new URL(url).searchParams.get('category') ?? '64';
+            const tags: string[] = [];
+            if (siteData.tag) {
+                tags.push(siteData.tag);
+            }
+            if (!tags.includes(this.categoryTags[category])) {
+                tags.push(this.categoryTags[category]);
+            }
             await getOrCreateTags(tags, notice, siteData.department);
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 
@@ -70,25 +79,28 @@ class ArchitectureCrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        const urlInstance = new URL(url, this.baseUrl);
-        if (!urlInstance) return;
-        const page = +(urlInstance.pathname.split('/')[4] ?? 1);
 
-        if ($) {
-            $('div.listbox_pinup, div.listbox').each((index, element) => {
-                const isPinned = $(element).attr('class') === 'listbox_pinup';
-                if (page > 1 && isPinned) return;
-                const titleElement = $(element).find('div.kr a');
-                // const title = titleElement.children('strong').first().text();
-                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+        if ($ !== undefined) {
+            $('tbody tr').each((index, element) => {
+                const titleElement = $(element).find('td:nth-child(2) a');
+                const noticeIdxRe = /viewData\('([0-9]+)'\)/;
+                const noticeIdx = titleElement.attr('onclick')?.match(noticeIdxRe);
+                if (!noticeIdx) return;
+                const pageUrl = new URL(url);
+                pageUrl.searchParams.set('mode', 'view');
+                pageUrl.searchParams.set('board_num', noticeIdx[1]);
+                pageUrl.searchParams.delete('page');
+                const link = pageUrl.href;
+
+                const tag = $(element).find('td:nth-child(1)').text();
                 if (link === undefined) return;
-                const preParseString = $(element).find('div.listbox_date.lev3.kr').text();
-                const dateString = preParseString.substring(preParseString.search(/\d{4}.\d{2}.\d{2}/)).trim();
+                const dateString = $(element).children('td').slice(3, 4).text().trim();
                 const newSiteData: SiteData = {
                     department: siteData.department,
-                    isPinned,
+                    isPinned: false,
                     isList: false,
                     dateString,
+                    tag,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -97,13 +109,18 @@ class ArchitectureCrawler extends Crawler {
                 });
             });
 
-            const nextPageElem = $('div.navigator div.wp-pagenavi a.page.larger');
+            const endElement = $('tfoot tr td a').last().attr('href');
+            const endUrl = absoluteLink(endElement, request.loadedUrl);
+            if (!endUrl) return;
+            const endUrlInstance = new URL(endUrl);
+            const urlInstance = new URL(url);
+            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
+            const endPage = endUrlInstance.searchParams.get('page');
 
-            if (nextPageElem.length) {
-                const nextPath = urlInstance.pathname.split('/').slice(0, 3).join('/');
+            if (endPage && page < +endPage) {
+                urlInstance.searchParams.set('page', (page + 1).toString());
 
-                const nextList = absoluteLink(`${nextPath}/page/${page + 1}`, request.loadedUrl);
-                if (!nextList) return;
+                const nextList: string = urlInstance.href;
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -116,13 +133,20 @@ class ArchitectureCrawler extends Crawler {
                     userData: nextListSiteData,
                 });
             }
+        } else {
+            throw new TypeError('Selector is undefined');
         }
     };
 }
 
-export const architecture = new ArchitectureCrawler({
-    departmentName: '건축학과',
-    departmentCode: 'architecture',
-    baseUrl: 'https://architecture.snu.ac.kr/activities/notice/',
+export const mse = new MSECrawler({
+    departmentName: '재료공학부',
+    departmentCode: 'mse',
+    baseUrl: 'https://mse.snu.ac.kr/sub.php?code=notice&category=',
     departmentCollege: ENGINEERING,
+    categoryTags: {
+        1: '학부',
+        2: '대학원',
+        64: '전체',
+    },
 });

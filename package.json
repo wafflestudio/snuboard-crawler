@@ -36,11 +36,18 @@
 		"prestart": "npm run build",
 		"start": "node dist/src/main.js",
 		"lint": "eslint \"{src,test}/**/*.{js,ts,tsx}\" --fix",
+		"lint-staged": "lint-staged",
 		"build": "tsc",
 		"rebuild": "rm -rf dist/* && npm run build",
 		"clean": "rm -rf apify_storage",
 		"test": "jest",
-		"coverage": "jest --coverage"
+		"coverage": "jest --coverage",
+		"update": "git submodule update"
+	},
+	"lint-staged": {
+		"src/**/*.{js,json,ts}": [
+			"prettier --write"
+		]
 	},
 	"author": "Sanggyu Lee",
 	"license": "UNLICENSED"

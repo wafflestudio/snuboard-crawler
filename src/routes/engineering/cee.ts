@@ -5,12 +5,12 @@ import { RequestQueue } from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { URL } from 'url';
-import { File, Notice } from '../../server/src/notice/notice.entity.js';
-import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { CategoryCrawler } from '../classes/categoryCrawler.js';
-import { ENGINEERING } from '../constants';
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../../utils';
+import { strptime } from '../../micro-strptime';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { ENGINEERING } from '../../constants';
 
 class CEECrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {

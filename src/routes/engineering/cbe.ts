@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../classes/categoryCrawler';
-import { ENGINEERING } from '../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { ENGINEERING } from '../../constants';
 
 export const cbe = new CategoryCrawler({
     departmentName: '화학생물공학부',

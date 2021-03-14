@@ -1,24 +1,21 @@
-// filename must equal to first level of url domain.
-// e.g. mse.snu.ac.kr -> mse.ts
-
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
-import { Notice, File } from '../../server/src/notice/notice.entity.js';
-import { SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { CategoryCrawler } from '../classes/categoryCrawler.js';
-import { ENGINEERING } from '../constants';
+import { RequestQueue } from 'apify';
+import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { SCIENCE } from '../../constants';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { File, Notice } from '../../../server/src/notice/notice.entity';
+import { strptime } from '../../micro-strptime';
 
-class MSECrawler extends CategoryCrawler {
+class MathCrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
+
         if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
@@ -27,15 +24,22 @@ class MSECrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const title = $('td[id="fn"]').text();
-            notice.title = title;
-            const contentElement = $('td[class="s_default_view_body_2"]').find('td');
-            contentElement.find('div[class="mnSns"]').remove();
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            notice.title = $('div.titleAndUser div.title h2 a, div.titleAndUser div.title h1 a ').text().trim();
+            const contentElement = $('div.contentBody div.xe_content');
+            let content;
+            if ($('div.contentBody div.xe_content div.document_popup_menu').length) {
+                contentElement.find('div.document_popup_menu').remove();
+                content = contentElement.html() ?? '';
+            } else {
+                content = contentElement.html() ?? '';
+            }
+            content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
-            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
+            const fullDateString: string = $('div.dateAndCount div.date').text().trim();
+            // example: '2021-02-26 11:34:01'
+            notice.createdAt = strptime(fullDateString, '%Y.%m.%d %H:%M:%S');
 
             notice.isPinned = siteData.isPinned;
             notice.link = url;
@@ -43,7 +47,7 @@ class MSECrawler extends CategoryCrawler {
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('#boardSkin_s_default_view > tbody > tr:nth-child(1) > td a').each((index, element) => {
+            $('div.fileAttached ul li a').each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
@@ -52,6 +56,7 @@ class MSECrawler extends CategoryCrawler {
                     files.push(file);
                 }
             });
+
             await Promise.all(
                 // using Promise.all in order to ensure full execution
                 files.map(async (file) => {
@@ -60,12 +65,10 @@ class MSECrawler extends CategoryCrawler {
                 }),
             );
 
-            const category = new URL(url).searchParams.get('category') ?? '64';
             const tags: string[] = [];
-            if (siteData.tag) {
-                tags.push(siteData.tag);
-            }
-            if (!tags.includes(this.categoryTags[category])) {
+            const urlInstance = new URL(request.loadedUrl);
+            const category = urlInstance.searchParams.get('mid');
+            if (category && this.categoryTags[category]) {
                 tags.push(this.categoryTags[category]);
             }
             await getOrCreateTags(tags, notice, siteData.department);
@@ -79,28 +82,22 @@ class MSECrawler extends CategoryCrawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-
         if ($ !== undefined) {
-            $('tbody tr').each((index, element) => {
-                const titleElement = $(element).find('td:nth-child(2) a');
-                const noticeIdxRe = /viewData\('([0-9]+)'\)/;
-                const noticeIdx = titleElement.attr('onclick')?.match(noticeIdxRe);
-                if (!noticeIdx) return;
-                const pageUrl = new URL(url);
-                pageUrl.searchParams.set('mode', 'view');
-                pageUrl.searchParams.set('board_num', noticeIdx[1]);
-                pageUrl.searchParams.delete('page');
-                const link = pageUrl.href;
+            $('table.boardList tbody tr').each((index, element) => {
+                const titleElement = $(element).find('td.title a').first();
+                // const title = titleElement.text();
 
-                const tag = $(element).find('td:nth-child(1)').text();
+                let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
-                const dateString = $(element).children('td').slice(3, 4).text().trim();
+                const pageUrl = new URL(link);
+                pageUrl.searchParams.delete('page');
+                link = pageUrl.href;
+
                 const newSiteData: SiteData = {
                     department: siteData.department,
                     isPinned: false,
                     isList: false,
-                    dateString,
-                    tag,
+                    dateString: '',
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -109,18 +106,20 @@ class MSECrawler extends CategoryCrawler {
                 });
             });
 
-            const endElement = $('tfoot tr td a').last().attr('href');
-            const endUrl = absoluteLink(endElement, request.loadedUrl);
-            if (!endUrl) return;
-            const endUrlInstance = new URL(endUrl);
-            const urlInstance = new URL(url);
-            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
-            const endPage = endUrlInstance.searchParams.get('page');
+            const endElement = $('div.pagination.a1 a.nextEnd');
+            const endUrl = absoluteLink(endElement.attr('href'), request.loadedUrl);
+            const endUrlInstance = new URL(endUrl ?? '');
+            const urlInstance = new URL(request.loadedUrl);
+            if (!endUrlInstance || !urlInstance) return;
 
-            if (endPage && page < +endPage) {
-                urlInstance.searchParams.set('page', (page + 1).toString());
+            const endPage = +(endUrlInstance.searchParams.get('page') ?? 1);
+            const page = +(urlInstance.searchParams.get('page') ?? 1);
 
-                const nextList: string = urlInstance.href;
+            if (page < endPage) {
+                const nextUrlInstance = new URL(urlInstance.href);
+                nextUrlInstance.searchParams.set('page', (page + 1).toString());
+                const nextList = nextUrlInstance.href;
+
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -139,14 +138,13 @@ class MSECrawler extends CategoryCrawler {
     };
 }
 
-export const mse = new MSECrawler({
-    departmentName: '재료공학부',
-    departmentCode: 'mse',
-    baseUrl: 'https://mse.snu.ac.kr/sub.php?code=notice&category=',
-    departmentCollege: ENGINEERING,
+export const math = new MathCrawler({
+    departmentName: '수리과학부',
+    departmentCode: 'math', // this value must be equal to the filename
+    departmentCollege: SCIENCE,
+    baseUrl: 'http://www.math.snu.ac.kr/board/index.php?mid=',
     categoryTags: {
-        1: '학부',
-        2: '대학원',
-        64: '전체',
+        notice: '공지사항',
+        employment: '행사/취업',
     },
 });

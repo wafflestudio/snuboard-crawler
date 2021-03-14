@@ -1,25 +1,18 @@
 // filename must equal to first level of url domain.
-// e.g. ee.snu.ac.kr -> ee.ts
+// e.g. ie.snu.ac.kr -> ie.ts
 
 import { RequestQueue } from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { URL } from 'url';
-import { File, Notice } from '../../server/src/notice/notice.entity.js';
-import { CategoryCrawlerInit, SiteData } from '../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
-import { strptime } from '../micro-strptime';
-import { CategoryCrawler } from '../classes/categoryCrawler';
-import { ENGINEERING } from '../constants';
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { strptime } from '../../micro-strptime';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { ENGINEERING } from '../../constants';
 
-class EECrawler extends CategoryCrawler {
-    private readonly excludeTags: string[];
-
-    constructor(initData: CategoryCrawlerInit) {
-        super(initData);
-        this.excludeTags = ['sugang', 'yonhapai'];
-    }
-
+class IECrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -37,31 +30,39 @@ class EECrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const title = $('div#bbs-view-wrap').children('h1').text();
+            const title = $('div[property="dc:title"]').children('h2').text();
             notice.title = title;
-            const contentElement = $('div.cnt');
+            const contentElement = $('div[property="content:encoded"]');
 
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            const fullDateString: string = $('div.field-name-post-date').find('div.field-item').text().trim();
 
-            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
+            try {
+                notice.createdAt = strptime(fullDateString, '%Y-%m-%d %H:%M:%S');
+            } catch {
+                notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
+            }
+
             notice.isPinned = siteData.isPinned;
             notice.link = url;
 
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('div.att-file ul li div').each((index, element) => {
-                const fileUrl = $(element).children('a').attr('href');
-                if (fileUrl) {
-                    const file = new File();
-                    file.name = $(element).text().trim();
-                    file.link = url;
-                    files.push(file);
-                }
-            });
+            $('div.field-name-field-attachment')
+                .find('span.file')
+                .each((index, element) => {
+                    const fileUrl = $(element).children('a').attr('href');
+                    if (fileUrl) {
+                        const file = new File();
+                        file.name = $(element).children('a').text().trim();
+                        file.link = fileUrl;
+                        files.push(file);
+                    }
+                });
             await Promise.all(
                 // using Promise.all in order to ensure full execution
                 files.map(async (file) => {
@@ -70,11 +71,8 @@ class EECrawler extends CategoryCrawler {
                 }),
             );
 
-            const category = url.replace(this.baseUrl, '').split('?')[0];
+            const category = new URL(url).pathname.split('/')[3]; // url.replace(BaseUrl, '').split('?')[0];
             const tags = [this.categoryTags[category]];
-            if (!this.excludeTags.includes(category) && title.startsWith('[')) {
-                tags.push(title.slice(1, title.indexOf(']')).trim());
-            }
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
@@ -88,15 +86,11 @@ class EECrawler extends CategoryCrawler {
         this.log.info('Page opened.', { url });
 
         if ($ !== undefined) {
-            $('div.bbs-blogstyle ul li').each((index, element) => {
-                const titleElement = $(element).children('a').first();
-                // const title = titleElement.children('strong').first().text();
-                let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+            $('tbody tr').each((index, element) => {
+                const titleElement = $(element).children('td.views-field-title-field').children('a');
+                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
-                const pageUrl = new URL(link);
-                pageUrl.searchParams.delete('page');
-                link = pageUrl.href;
-                const dateString = $(element).find('p.date span').text().split('l')[1].trim();
+                const dateString = $(element).find('td.views-field-created').text().trim();
 
                 const newSiteData: SiteData = {
                     department: siteData.department,
@@ -111,9 +105,8 @@ class EECrawler extends CategoryCrawler {
                 });
             });
 
-            const endElement = $('div.pagination-01').children('a.direction.next').last().attr('href');
+            const endElement = $('ul.pagination').children('li.pager-last').children('a').attr('href');
             const endUrl = absoluteLink(endElement, request.loadedUrl);
-
             if (!endUrl) return;
             const endUrlInstance = new URL(endUrl);
             const urlInstance = new URL(url);
@@ -142,18 +135,20 @@ class EECrawler extends CategoryCrawler {
     };
 }
 
-export const ee = new EECrawler({
-    departmentName: '전기정보공학부',
-    departmentCode: 'ee',
-    baseUrl: 'https://ee.snu.ac.kr/community/notice/',
+export const ie = new IECrawler({
+    departmentName: '산업공학과',
+    departmentCode: 'ie',
+    baseUrl: 'http://ie.snu.ac.kr/ko/board/',
     departmentCollege: ENGINEERING,
     categoryTags: {
-        academic: '학사',
-        scholarship: '장학',
-        admissions: '입시&기타',
-        campuslife: '대학생활',
-        jobs: '취업&전문연',
-        sugang: '수강',
-        yonhapai: '인공지능',
+        2: '학과 주요뉴스',
+        3: '학과 행사',
+        4: '자료실',
+        5: '기타사항',
+        6: '취업',
+        7: '학부',
+        8: '대학원',
+        //  14:'역대 이중한 상 수상자',
+        15: '장학금',
     },
 });

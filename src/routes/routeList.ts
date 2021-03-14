@@ -11,18 +11,20 @@ import { cee } from './engineering/cee';
 import { architecture } from './engineering/architecture';
 import { mse } from './engineering/mse';
 import { physics } from './science/physics';
+import { chem } from './science/chem';
 
 export const routeList: ((connection: Connection) => Promise<void>)[] = [
-    cse.startCrawl,
-    ee.startCrawl,
-    cbe.startCrawl,
-    ere.startCrawl,
-    me.startCrawl,
-    ie.startCrawl,
-    ship.startCrawl,
-    cee.startCrawl,
-    architecture.startCrawl,
-    mse.startCrawl,
-    math.startCrawl,
-    physics.startCrawl,
+    // cse.startCrawl,
+    // ee.startCrawl,
+    // cbe.startCrawl,
+    // ere.startCrawl,
+    // me.startCrawl,
+    // ie.startCrawl,
+    // ship.startCrawl,
+    // cee.startCrawl,
+    // architecture.startCrawl,
+    // mse.startCrawl,
+    // math.startCrawl,
+    // physics.startCrawl,
+    chem.startCrawl,
 ];

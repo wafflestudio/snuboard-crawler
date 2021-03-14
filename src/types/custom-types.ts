@@ -22,9 +22,19 @@ export interface CrawlerInit {
 export interface CategoryCrawlerInit extends CrawlerInit {
     categoryTags: CategoryTag;
     excludedTag?: string;
+    codeTags?: CategoryTag;
 }
 
 export interface TitleAndTags {
     title: string;
     tags: string[];
+}
+
+export interface ChemPageSummary {
+    seqno: string;
+    title: string;
+    contents: string;
+    wdate: string;
+    file_path1: string;
+    visit_cnt: string;
 }

@@ -80,10 +80,6 @@ class PhysicsCrawler extends Crawler {
             $('table.fixwidth.table-rows tbody tr').each((index, element) => {
                 const isPinned = $(element).find('td.text-center.noti-ico').length !== 0;
 
-                if (!isPinned) {
-                    minNoticeId = Math.min(minNoticeId, +($(element).find('td.text-center').first().text() ?? -1));
-                }
-
                 const titleElement = $(element).find('td.title a').first();
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
@@ -101,6 +97,11 @@ class PhysicsCrawler extends Crawler {
                     userData: newSiteData,
                 });
             });
+
+            minNoticeId = Math.min(
+                minNoticeId,
+                +($('table.fixwidth.table-rows tbody tr').last().find('td.text-center').first().text() ?? -1),
+            );
 
             if (minNoticeId > 1) {
                 const nextUrlInstance = new URL(urlInstance.href);

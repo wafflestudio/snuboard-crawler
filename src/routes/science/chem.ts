@@ -10,7 +10,8 @@ import { RequestQueue } from 'apify';
 import { ENGINEERING, SCIENCE } from '../../constants';
 
 class ChemCrawler extends CategoryCrawler {
-    protected encoding: string = 'EUC-KR';
+    protected readonly encoding: string = 'EUC-KR';
+    protected readonly maxRetries: number = 5;
 
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;

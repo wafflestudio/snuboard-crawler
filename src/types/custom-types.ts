@@ -22,7 +22,6 @@ export interface CrawlerInit {
 export interface CategoryCrawlerInit extends CrawlerInit {
     categoryTags: CategoryTag;
     excludedTag?: string;
-    codeTags?: CategoryTag;
 }
 
 export interface TitleAndTags {

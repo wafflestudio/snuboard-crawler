@@ -112,7 +112,6 @@ class ShipCrawler extends Crawler {
             });
 
             const endUrlInstance = new URL(absoluteLink($('div.pagination.a1 a.nextEnd').attr('href'), url) ?? '');
-            if (!endUrlInstance) return;
 
             const endPage = +(endUrlInstance.searchParams.get('page') ?? 1);
             // +lastNoticeId === 1  <==> loaded page is the last page

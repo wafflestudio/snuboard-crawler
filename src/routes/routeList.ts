@@ -12,6 +12,7 @@ import { architecture } from './engineering/architecture';
 import { mse } from './engineering/mse';
 import { physics } from './science/physics';
 import { biosci } from './science/biosci';
+import { sees } from './science/sees';
 
 export const routeList: ((connection: Connection) => Promise<void>)[] = [
     cse.startCrawl,
@@ -27,4 +28,5 @@ export const routeList: ((connection: Connection) => Promise<void>)[] = [
     math.startCrawl,
     physics.startCrawl,
     biosci.startCrawl,
+    sees.startCrawl,
 ];

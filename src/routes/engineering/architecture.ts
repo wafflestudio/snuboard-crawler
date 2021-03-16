@@ -71,7 +71,6 @@ class ArchitectureCrawler extends Crawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
         const urlInstance = new URL(url, this.baseUrl);
-        if (!urlInstance) return;
         const page = +(urlInstance.pathname.split('/')[4] ?? 1);
 
         if ($) {

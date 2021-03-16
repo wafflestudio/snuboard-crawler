@@ -55,7 +55,6 @@ class SeesCrawler extends Crawler {
                         file.name = $(element).text().trim();
 
                         const fileLinkInstance = new URL(absoluteLink('/cmm/fms/FileDown.do?', this.baseUrl) ?? '');
-                        if (!fileLinkInstance) return;
                         let params = fileUrl.match(/'[^\']+'/g) ?? [];
                         params = params.map((param) => {
                             param.substring(1, param.length - 1);
@@ -118,7 +117,6 @@ class SeesCrawler extends Crawler {
             });
 
             const endUrlInstance = new URL(absoluteLink($('div.pagination a.last').attr('href'), this.baseUrl) ?? '');
-            if (!endUrlInstance) return;
 
             const endPage = +(endUrlInstance.searchParams.get('pageIndex') ?? 1);
             if (page < endPage) {

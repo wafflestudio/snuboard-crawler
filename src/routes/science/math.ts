@@ -110,7 +110,6 @@ class MathCrawler extends CategoryCrawler {
             const endUrl = absoluteLink(endElement.attr('href'), request.loadedUrl);
             const endUrlInstance = new URL(endUrl ?? '');
             const urlInstance = new URL(request.loadedUrl);
-            if (!endUrlInstance || !urlInstance) return;
 
             const endPage = +(endUrlInstance.searchParams.get('page') ?? 1);
             const page = +(urlInstance.searchParams.get('page') ?? 1);

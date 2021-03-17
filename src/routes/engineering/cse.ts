@@ -22,7 +22,11 @@ class CSECrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
+            if ($('.menu-block-wrapper li a').attr('href') !== '/department-notices') {
+                // Only crawl notices
+                this.log.info('Skipping since it is not a notice');
+                return;
+            }
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;

@@ -27,8 +27,7 @@ class BiosciCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const titleText = $('div[id="bbs-view-wrap"] h1.bbstitle').text().trim();
-            notice.title = parseTitle(titleText).title;
+            notice.title = $('div[id="bbs-view-wrap"] h1.bbstitle').text().trim();
             const contentElement = $('div.bbs_contents');
 
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';

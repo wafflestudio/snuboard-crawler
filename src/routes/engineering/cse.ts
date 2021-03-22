@@ -22,7 +22,14 @@ class CSECrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
+            const menu = $('.menu-block-wrapper li a.active').attr('href');
+            if (menu === '/department-notices') {
+                // 공지사항
+            } else if (menu === '/seminars') {
+                // 세미나
+            } else {
+                throw Error(`Unknown menu '${menu}'`);
+            }
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
@@ -73,16 +80,21 @@ class CSECrawler extends Crawler {
                 }),
             );
 
-            const tagString = $('div.field-name-field-tag').text();
-            if (tagString.includes('태그:')) {
-                const tags = tagString
-                    .replace('태그:', '')
-                    .split(',')
-                    .map((tag) => tag.trim())
-                    .filter((value) => value.length > 0);
+            if (menu === '/seminars') {
+                const tags = ['세미나'];
                 await getOrCreateTags(tags, notice, siteData.department);
             } else {
-                throw new TypeError(`tagString ${tagString} does not include '태그:'`);
+                const tagString = $('div.field-name-field-tag').text();
+                if (tagString.includes('태그:')) {
+                    const tags = tagString
+                        .replace('태그:', '')
+                        .split(',')
+                        .map((tag) => tag.trim())
+                        .filter((value) => value.length > 0);
+                    await getOrCreateTags(tags, notice, siteData.department);
+                } else {
+                    throw new TypeError(`tagString ${tagString} does not include '태그:'`);
+                }
             }
         } else {
             throw new TypeError('Selector is undefined');

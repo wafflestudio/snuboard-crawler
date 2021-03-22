@@ -34,7 +34,7 @@ export async function saveNotice(notice: Notice): Promise<Notice> {
         if (!notice.hasId()) {
             notice.cursor = 0;
             await transactionalEntityManager.save(notice);
-            notice.cursor = notice.createdAt.getTime() + (notice.id % 1000);
+            notice.cursor = notice.createdAt.getTime() * 100 + (notice.id % 100000);
         }
         await transactionalEntityManager.save(notice);
     });

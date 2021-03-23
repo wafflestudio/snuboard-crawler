@@ -46,6 +46,15 @@ export function absoluteLink(link: string | undefined, baseUrl: string): string 
     return new URL(link, baseUrl).href;
 }
 
+export function removeUrlPageParam(link: string | undefined): string | undefined {
+    if (link === undefined) return undefined;
+    const pageUrl = new URL(link);
+    pageUrl.searchParams.delete('page');
+    link = pageUrl.href;
+
+    return link;
+}
+
 export function parseTitle(titleText: string): TitleAndTags {
     const titleRe = /((?:\[.*?\]\s{0,2})*)(.*)/;
     const titleAndTags = titleText.trim().match(titleRe);

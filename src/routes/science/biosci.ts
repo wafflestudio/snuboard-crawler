@@ -4,7 +4,7 @@ import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -27,7 +27,9 @@ class BiosciCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            notice.title = $('div[id="bbs-view-wrap"] h1.bbstitle').text().trim();
+            const tagTitle = $('div[id="bbs-view-wrap"] h1.bbstitle').text().trim();
+            notice.title = tagTitle.substring(tagTitle.indexOf(']') + 1).trim();
+
             const contentElement = $('div.bbs_contents');
 
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';

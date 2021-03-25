@@ -13,6 +13,10 @@ import { mse } from './engineering/mse';
 import { physics } from './science/physics';
 import { biosci } from './science/biosci';
 import { sees } from './science/sees';
+import { snuPharm } from './pharm/snupharm';
+import { vet } from './vet/vet';
+import { cls } from './cls/cls';
+import { social } from './social/social';
 
 export const routeList: ((connection: Connection) => Promise<void>)[] = [
     cse.startCrawl,
@@ -29,4 +33,8 @@ export const routeList: ((connection: Connection) => Promise<void>)[] = [
     physics.startCrawl,
     biosci.startCrawl,
     sees.startCrawl,
+    snuPharm.startCrawl,
+    vet.startCrawl,
+    cls.startCrawl,
+    social.startCrawl,
 ];

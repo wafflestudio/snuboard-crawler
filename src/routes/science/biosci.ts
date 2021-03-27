@@ -44,7 +44,12 @@ export class BiosciCrawler extends Crawler {
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('div.att-file ul li a').each((index, element) => {
+
+            let fileElement = $('div.att-file ul li a');
+            if (fileElement.length === 0) {
+                fileElement = $('ul.board-filelist li div a');
+            }
+            fileElement.each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();

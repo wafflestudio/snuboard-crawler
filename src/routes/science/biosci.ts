@@ -80,7 +80,7 @@ export class BiosciCrawler extends Crawler {
         if ($ !== undefined) {
             $('table.fixwidth tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td.title a');
-                const isPinned = $(element).children('td').first().text().trim() === '공지';
+                const isPinned = $(element).hasClass('noti');
 
                 let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
@@ -90,7 +90,7 @@ export class BiosciCrawler extends Crawler {
                 const tagElement = $(element).find('td:nth-child(2)');
                 let tag: string;
                 // to use biosci Crawler in cals
-                if (tagElement.attr('class')?.includes('hidden-sm-down')) {
+                if (tagElement.hasClass('hidden-sm-down')) {
                     tag = tagElement.text() === '' ? '미분류' : tagElement.text();
                 } else tag = '공지사항';
                 const dateString = $(element).find('td:nth-last-child(2)').text();
@@ -109,33 +109,20 @@ export class BiosciCrawler extends Crawler {
                 });
             });
 
-            const urlInstance = new URL(url);
-            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
+            const nextList = absoluteLink($('.pagination-01 ul.pager li.next a').attr('href'), url);
+            if (nextList === url || nextList === undefined) return;
 
-            const lastNoticeId: string | undefined = $('table.bbs-tblstyle tbody tr')
-                .last()
-                .children('td')
-                .first()
-                .text()
-                .trim();
-            if (!lastNoticeId) return;
-            if (Number.isNaN(+lastNoticeId) || +lastNoticeId > 1) {
-                const nextUrlInstance = new URL(urlInstance.href);
-                nextUrlInstance.searchParams.set('page', (page + 1).toString());
-                const nextList = nextUrlInstance.href;
-
-                this.log.info('Enqueueing list', { nextList });
-                const nextListSiteData: SiteData = {
-                    department: siteData.department,
-                    isPinned: false,
-                    isList: true,
-                    dateString: '',
-                };
-                await this.addVaryingRequest(requestQueue, {
-                    url: nextList,
-                    userData: nextListSiteData,
-                });
-            }
+            this.log.info('Enqueueing list', { nextList });
+            const nextListSiteData: SiteData = {
+                department: siteData.department,
+                isPinned: false,
+                isList: true,
+                dateString: '',
+            };
+            await this.addVaryingRequest(requestQueue, {
+                url: nextList,
+                userData: nextListSiteData,
+            });
         } else {
             throw new TypeError('Selector is undefined');
         }

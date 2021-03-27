@@ -12,6 +12,7 @@ export const cbe = new CategoryCrawler({
         postgraduate_school: '대학원',
         seminar: '세미나',
         free_board: '자유게시판',
+        Scholarship: '장학/취업/창업',
     },
     excludedTag: '미분류',
 });

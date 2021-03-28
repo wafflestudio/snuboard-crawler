@@ -42,7 +42,8 @@
 		"clean": "rm -rf apify_storage",
 		"test": "jest",
 		"coverage": "jest --coverage",
-		"update": "git submodule update --remote"
+		"update": "git submodule update --remote",
+		"crawl-one": "node dist/src/crawl-one.js"
 	},
 	"lint-staged": {
 		"src/**/*.{js,json,ts}": [

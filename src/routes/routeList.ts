@@ -17,24 +17,27 @@ import { snuPharm } from './pharm/snupharm';
 import { vet } from './vet/vet';
 import { cls } from './cls/cls';
 import { social } from './social/social';
+import { Crawler } from '../classes/crawler';
 
-export const routeList: ((connection: Connection) => Promise<void>)[] = [
-    cse.startCrawl,
-    ee.startCrawl,
-    cbe.startCrawl,
-    ere.startCrawl,
-    me.startCrawl,
-    ie.startCrawl,
-    ship.startCrawl,
-    cee.startCrawl,
-    architecture.startCrawl,
-    mse.startCrawl,
-    math.startCrawl,
-    physics.startCrawl,
-    biosci.startCrawl,
-    sees.startCrawl,
-    snuPharm.startCrawl,
-    vet.startCrawl,
-    cls.startCrawl,
-    social.startCrawl,
+export const crawlerList: Crawler[] = [
+    cse,
+    ee,
+    cbe,
+    ere,
+    me,
+    ie,
+    ship,
+    cee,
+    architecture,
+    mse,
+    math,
+    physics,
+    biosci,
+    sees,
+    snuPharm,
+    vet,
+    cls,
+    social,
 ];
+
+export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

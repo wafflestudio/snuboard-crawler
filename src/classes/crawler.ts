@@ -12,7 +12,7 @@ import { Department } from '../../server/src/department/department.entity';
 export abstract class Crawler {
     protected readonly departmentName: string;
 
-    protected readonly departmentCode: string;
+    public readonly departmentCode: string;
 
     protected readonly departmentCollege: string;
 

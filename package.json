@@ -43,6 +43,7 @@
 		"test": "jest",
 		"coverage": "jest --coverage",
 		"update": "git submodule update --remote",
+		"precrawl-one": "tsc",
 		"crawl-one": "node dist/src/crawl-one.js"
 	},
 	"lint-staged": {

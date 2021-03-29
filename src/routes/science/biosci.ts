@@ -1,14 +1,14 @@
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
+import { Crawler } from '../../classes/crawler';
 
-class BiosciCrawler extends CategoryCrawler {
+export class BiosciCrawler extends Crawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -27,8 +27,8 @@ class BiosciCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const tagTitle = $('div[id="bbs-view-wrap"] h1.bbstitle').text().trim();
-            notice.title = tagTitle.substring(tagTitle.indexOf(']') + 1).trim();
+            const tagTitle = $('h1.bbstitle').text().trim();
+            notice.title = tagTitle.startsWith('[') ? tagTitle.substring(tagTitle.indexOf(']') + 1).trim() : tagTitle;
 
             const contentElement = $('div.bbs_contents');
 
@@ -36,17 +36,20 @@ class BiosciCrawler extends CategoryCrawler {
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
-            const fullDateString: string = $('div.infowrap p.writer').text().split('l')[1].trim();
-            // example: '2021-03-15'
 
-            notice.createdAt = strptime(fullDateString, '%Y-%m-%d');
+            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
             notice.isPinned = siteData.isPinned;
             notice.link = url;
 
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('div.att-file ul li a').each((index, element) => {
+
+            let fileElement = $('div.att-file ul li a');
+            if (fileElement.length === 0) {
+                fileElement = $('ul.board-filelist li div a');
+            }
+            fileElement.each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
@@ -65,10 +68,8 @@ class BiosciCrawler extends CategoryCrawler {
             );
 
             const tags: string[] = [];
-            const urlInstance = new URL(request.loadedUrl);
-            const category = urlInstance.searchParams.get('cidx');
-            if (category && this.categoryTags[category]) {
-                tags.push(this.categoryTags[category]);
+            if (siteData.tag !== undefined) {
+                tags.push(siteData.tag);
             }
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
@@ -82,20 +83,29 @@ class BiosciCrawler extends CategoryCrawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
         if ($ !== undefined) {
-            $('table.bbs-tblstyle tbody tr').each((index, element) => {
+            $('table.fixwidth tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td.title a');
-                const isPinned = $(element).children('td').first().text().trim() === '공지';
+                const isPinned = $(element).hasClass('noti');
 
                 let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const pageUrl = new URL(link);
                 pageUrl.searchParams.delete('page');
                 link = pageUrl.href;
+                const tagElement = $(element).find('td:nth-child(2)');
+                let tag: string;
+                // to use biosci Crawler in cals
+                if (tagElement.hasClass('hidden-sm-down')) {
+                    tag = tagElement.text() === '' ? '미분류' : tagElement.text();
+                } else tag = '공지사항';
+                const dateString = $(element).find('td:nth-last-child(2)').text();
+
                 const newSiteData: SiteData = {
                     department: siteData.department,
                     isPinned,
                     isList: false,
-                    dateString: '',
+                    dateString,
+                    tag,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -104,33 +114,20 @@ class BiosciCrawler extends CategoryCrawler {
                 });
             });
 
-            const urlInstance = new URL(url);
-            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
+            const nextList = absoluteLink($('.pagination-01 ul.pager li.next a').attr('href'), url);
+            if (nextList === url || nextList === undefined) return;
 
-            const lastNoticeId: string | undefined = $('table.bbs-tblstyle tbody tr')
-                .last()
-                .children('td')
-                .first()
-                .text()
-                .trim();
-            if (!lastNoticeId) return;
-            if (Number.isNaN(+lastNoticeId) || +lastNoticeId > 1) {
-                const nextUrlInstance = new URL(urlInstance.href);
-                nextUrlInstance.searchParams.set('page', (page + 1).toString());
-                const nextList = nextUrlInstance.href;
-
-                this.log.info('Enqueueing list', { nextList });
-                const nextListSiteData: SiteData = {
-                    department: siteData.department,
-                    isPinned: false,
-                    isList: true,
-                    dateString: '',
-                };
-                await this.addVaryingRequest(requestQueue, {
-                    url: nextList,
-                    userData: nextListSiteData,
-                });
-            }
+            this.log.info('Enqueueing list', { nextList });
+            const nextListSiteData: SiteData = {
+                department: siteData.department,
+                isPinned: false,
+                isList: true,
+                dateString: '',
+            };
+            await this.addVaryingRequest(requestQueue, {
+                url: nextList,
+                userData: nextListSiteData,
+            });
         } else {
             throw new TypeError('Selector is undefined');
         }
@@ -141,15 +138,5 @@ export const biosci = new BiosciCrawler({
     departmentName: '생명과학부',
     departmentCode: 'biosci', // this value must be equal to the filename
     departmentCollege: SCIENCE,
-    baseUrl: 'https://biosci.snu.ac.kr/board/notice?cidx=',
-    categoryTags: {
-        // 0: '전체분류',
-        15: '입시',
-        29: '학부공지',
-        30: '대학원공지',
-        31: '학부/대학원',
-        32: '논문/졸업',
-        33: '과제공고',
-        34: '기타',
-    },
+    baseUrl: 'https://biosci.snu.ac.kr/board/notice',
 });

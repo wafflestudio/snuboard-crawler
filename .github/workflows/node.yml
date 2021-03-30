@@ -13,22 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [ 12.x, 15.x ]
-
-
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_DATABASE: github-actions
-          MYSQL_ROOT_PASSWORD: password
-        options: >-
-          --health-cmd "mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 3306:3306
+        node-version: [ 12.x, 14.x ]
 
     steps:
       - uses: actions/checkout@v2

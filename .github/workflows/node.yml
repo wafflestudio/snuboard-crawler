@@ -21,7 +21,6 @@ jobs:
       - name: Set up MariaDB
         uses: gyusang/mariadb-action@master
         with:
-          host port:
           collation server: 'utf8_unicode_ci'
           mariadb version: '10.4.8'
           mysql database: 'github_actions'

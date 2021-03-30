@@ -19,6 +19,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+      - name: Shutdown Ubuntu MySQL
+        run: sudo service mysql stop
       - name: Set up MariaDB
         uses: getong/mariadb-action@v1.1
         with:
@@ -28,7 +30,7 @@ jobs:
           mysql root password: 'password'
 
       - name: Check MariaDB
-        run: mysqladmin -uroot -ppassword -h127.0.0.1 ping
+        run: mysqladmin -uroot -ppassword -hlocalhost ping
       - name: Install dependencies
         run: npm ci
 

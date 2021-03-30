@@ -52,6 +52,5 @@ export const routeList: ((connection: Connection) => Promise<void>)[] = [
     econ.startCrawl,
     humanities.startCrawl,
     nursing.startCrawl,
-    econ.startCrawl,
     cba.startCrawl,
 ];

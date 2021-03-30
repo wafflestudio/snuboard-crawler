@@ -30,7 +30,7 @@ jobs:
           mysql root password: 'password'
 
       - name: Check MariaDB
-        run: mysqladmin -uroot -ppassword -hlocalhost ping
+        run: mysqladmin -uroot -ppassword -h127.0.0.1 ping
       - name: Install dependencies
         run: npm ci
 

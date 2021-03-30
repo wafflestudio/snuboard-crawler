@@ -4,7 +4,7 @@ import { ENV } from './env';
 
 export async function createDBConnection(): Promise<Connection> {
     return createConnection({
-        type: 'mysql',
+        type: 'mariadb',
         host: process.env.DATABASE_HOST,
         port: +(process.env.DATABASE_PORT ?? '3306'),
         username: process.env.DATABASE_USER,

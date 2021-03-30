@@ -26,8 +26,6 @@ jobs:
           mariadb version: '10.4.8'
           mysql database: 'github-actions'
           mysql root password: 'password'
-          mysql user: 'actions'
-          mysql password: 'password'
 
       - name: Install dependencies
         run: npm ci

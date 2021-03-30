@@ -27,6 +27,8 @@ jobs:
           mysql database: 'github_actions'
           mysql root password: 'password'
 
+      - name: Check MariaDB
+        run: mysqladmin -uroot -ppassword -h127.0.0.1 ping
       - name: Install dependencies
         run: npm ci
 

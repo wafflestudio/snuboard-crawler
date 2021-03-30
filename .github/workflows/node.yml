@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [ 12.x, 14.x ]
+        node-version: [ 12.x, 15.x ]
 
     steps:
       - uses: actions/checkout@v2
@@ -24,7 +24,7 @@ jobs:
         with:
           collation server: 'utf8_unicode_ci'
           mariadb version: '10.4.8'
-          mysql database: 'github-actions'
+          mysql database: 'github_actions'
           mysql root password: 'password'
 
       - name: Install dependencies

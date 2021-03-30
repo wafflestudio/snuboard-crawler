@@ -16,9 +16,6 @@ jobs:
         node-version: [ 12.x, 15.x ]
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
       - name: Shutdown Ubuntu MySQL
         run: sudo service mysql stop
       - name: Set up MariaDB
@@ -31,7 +28,11 @@ jobs:
           mysql root password: 'password'
 
       - name: Check MariaDB
-        run: while true; do mysqladmin -uroot -ppassword -h127.0.0.1 ping; sleep 10; done"
+        run: while true; do mysqladmin -uroot -ppassword -h127.0.0.1 ping; sleep 10; done
+
+      - uses: actions/checkout@v2
+          with:
+            submodules: recursive
       - name: Install dependencies
         run: npm ci
 

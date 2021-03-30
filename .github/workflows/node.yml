@@ -27,11 +27,12 @@ jobs:
           mysql root password: 'password'
 
       - name: Check MariaDB
-        run: while true; do mysqladmin -uroot -ppassword -h127.0.0.1 ping; sleep 10; done
+        run: mysqladmin -uroot -ppassword -h127.0.0.1 ping
 
       - uses: actions/checkout@v2
           with:
             submodules: recursive
+
       - name: Install dependencies
         run: npm ci
 

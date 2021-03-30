@@ -20,6 +20,10 @@ export abstract class Crawler {
 
     protected readonly startTime: number;
 
+    protected readonly encoding: string | undefined;
+
+    protected readonly maxRetries: number;
+
     protected readonly log;
 
     public constructor(initData: CrawlerInit) {
@@ -29,6 +33,8 @@ export abstract class Crawler {
         this.baseUrl = initData.baseUrl;
         this.startTime = Math.floor(new Date().getTime() / 1000);
 
+        this.maxRetries = 0;
+        this.encoding = undefined;
         this.log = Apify.utils.log.child({
             prefix: this.departmentName,
         });
@@ -70,7 +76,8 @@ export abstract class Crawler {
         const crawler = new Apify.CheerioCrawler({
             requestQueue,
             maxConcurrency: 1,
-            maxRequestRetries: 0,
+            maxRequestRetries: this.maxRetries,
+            forceResponseEncoding: this.encoding,
             handlePageFunction: async (context) => {
                 try {
                     if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);

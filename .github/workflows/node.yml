@@ -27,7 +27,7 @@ jobs:
         uses: gyusang/mariadb-action@master
         with:
           collation server: 'utf8_unicode_ci'
-          mariadb version: '10.4.8'
+          mariadb version: '10.4.10'
           mysql database: 'github_actions'
           mysql root password: 'password'
 

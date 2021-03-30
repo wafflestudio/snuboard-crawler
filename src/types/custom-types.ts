@@ -28,3 +28,12 @@ export interface TitleAndTags {
     title: string;
     tags: string[];
 }
+
+export interface ChemPageSummary {
+    seqno: string;
+    title: string;
+    contents: string;
+    wdate: string;
+    file_path1: string;
+    visit_cnt: string;
+}

@@ -23,20 +23,22 @@ class CSECrawler extends Crawler {
             // dept -> notice -> file
             //                -> tag -> notice_tag
             const menu = $('.menu-block-wrapper li a.active').attr('href');
-            if (menu === '/department-notices') {
-                // 공지사항
-            } else if (menu === '/seminars') {
-                // 세미나
-            } else {
-                throw Error(`Unknown menu '${menu}'`);
-            }
+            const isSeminar = menu === '/seminars';
+
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
             notice.title = $('h1#page-title').text().trim();
 
-            const contentElement = $('div.field-name-body');
-            let content = contentElement.children('div').children('div').html() ?? '';
+            let contentElement;
+            let content;
+            if (isSeminar) {
+                contentElement = $('div.node-seminar');
+                content = contentElement.html() ?? '';
+            } else {
+                contentElement = $('div.field-name-body');
+                content = contentElement.children('div').children('div').html() ?? '';
+            }
             content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
@@ -80,21 +82,28 @@ class CSECrawler extends Crawler {
                 }),
             );
 
-            if (menu === '/seminars') {
+            if (isSeminar) {
                 const tags = ['세미나'];
                 await getOrCreateTags(tags, notice, siteData.department);
             } else {
-                const tagString = $('div.field-name-field-tag').text();
-                if (tagString.includes('태그:')) {
-                    const tags = tagString
-                        .replace('태그:', '')
-                        .split(',')
-                        .map((tag) => tag.trim())
-                        .filter((value) => value.length > 0);
-                    await getOrCreateTags(tags, notice, siteData.department);
-                } else {
-                    throw new TypeError(`tagString ${tagString} does not include '태그:'`);
-                }
+                const tags: string[] = [];
+
+                $('div.field-name-field-tag').each(async (index, element) => {
+                    const tagString = $(element).text();
+
+                    if (tagString.includes('태그:')) {
+                        tagString
+                            .replace('태그:', '')
+                            .split(',')
+                            .map((tag) => tag.trim())
+                            .filter((value) => value.length > 0)
+                            .forEach((tag) => tags.push(tag));
+                    } else {
+                        throw new TypeError(`tagString ${tagString} does not include '태그:'`);
+                    }
+                });
+
+                await getOrCreateTags(tags, notice, siteData.department);
             }
         } else {
             throw new TypeError('Selector is undefined');

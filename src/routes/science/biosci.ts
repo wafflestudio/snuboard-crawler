@@ -1,16 +1,14 @@
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { Crawler } from '../../classes/crawler';
-import { CBA } from '../../constants';
+import { SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, removeUrlPageParam, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
+import { Crawler } from '../../classes/crawler';
 
-class CbaCrawler extends Crawler {
-    protected readonly encoding: string = 'EUC-KR';
-
+export class BiosciCrawler extends Crawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -22,37 +20,41 @@ class CbaCrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
+            $('img').each((index, element) => {
+                const imgSrc = $(element).attr('src');
+                $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
+            });
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            notice.title = $('p.bbstit').text().trim();
-            const contentElement = $('div.CBA_innercontent');
-            let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+            const tagTitle = $('h1.bbstitle').text().trim();
+            notice.title = tagTitle.startsWith('[') ? tagTitle.substring(tagTitle.indexOf(']') + 1).trim() : tagTitle;
+
+            const contentElement = $('div.bbs_contents');
+
+            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
 
-            try {
-                const fullDateString: string = $('table tbody tr:nth-child(2) td:nth-child(2)').text().trim();
-                notice.createdAt = strptime(fullDateString, '%Y-%m-%d %H:%M:%S');
-            } catch {
-                notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
-            }
-
+            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
             notice.isPinned = siteData.isPinned;
             notice.link = url;
 
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('td.afile ul li a').each((index, element) => {
+
+            let fileElement = $('div.att-file ul li a');
+            if (fileElement.length === 0) {
+                fileElement = $('ul.board-filelist li div a');
+            }
+            fileElement.each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = absoluteLink(fileUrl, url) ?? '';
+                    file.link = url;
                     files.push(file);
                 }
             });
@@ -66,9 +68,9 @@ class CbaCrawler extends Crawler {
             );
 
             const tags: string[] = [];
-            const categoryString = $('.cate').text();
-            const category = categoryString.substring(1, categoryString.length - 1);
-            tags.push(category);
+            if (siteData.tag !== undefined) {
+                tags.push(siteData.tag);
+            }
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
@@ -80,24 +82,30 @@ class CbaCrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        const urlInstance = new URL(url);
-        const page: number = +(urlInstance.searchParams.get('page') ?? 1);
         if ($ !== undefined) {
-            $('table tbody tr').each((index, element) => {
-                const isPinned = $(element).children('td.notice').length !== 0;
-
+            $('table.fixwidth tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td.title a');
-                // const title = titleElement.text();
-                const link = removeUrlPageParam(absoluteLink(titleElement.attr('href'), request.loadedUrl));
-                if (link === undefined) return;
+                const isPinned = $(element).hasClass('noti');
 
-                const dateString = $(element).children('td.date').text();
+                let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                if (link === undefined) return;
+                const pageUrl = new URL(link);
+                pageUrl.searchParams.delete('page');
+                link = pageUrl.href;
+                const tagElement = $(element).find('td:nth-child(2)');
+                let tag: string;
+                // to use biosci Crawler in cals
+                if (tagElement.hasClass('hidden-sm-down')) {
+                    tag = tagElement.text() === '' ? '미분류' : tagElement.text();
+                } else tag = '공지사항';
+                const dateString = $(element).find('td:nth-last-child(2)').text();
 
                 const newSiteData: SiteData = {
                     department: siteData.department,
                     isPinned,
                     isList: false,
                     dateString,
+                    tag,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -106,39 +114,29 @@ class CbaCrawler extends Crawler {
                 });
             });
 
-            const nextPage = +(
-                new URL(absoluteLink($('div.bbspage a.next').attr('href'), request.loadedUrl) ?? '').searchParams.get(
-                    'page',
-                ) ?? 1
-            );
+            const nextList = absoluteLink($('.pagination-01 ul.pager li.next a').attr('href'), url);
+            if (nextList === url || nextList === undefined) return;
 
-            if (page !== nextPage) {
-                const nextListInstance = new URL(urlInstance.href);
-                nextListInstance.searchParams.set('page', (page + 1).toString());
-
-                this.log.info('Enqueueing list', { nextList: nextListInstance.href });
-
-                const nextListSiteData: SiteData = {
-                    department: siteData.department,
-                    isPinned: false,
-                    isList: true,
-                    dateString: '',
-                };
-
-                await requestQueue.addRequest({
-                    url: nextListInstance.href,
-                    userData: nextListSiteData,
-                });
-            }
+            this.log.info('Enqueueing list', { nextList });
+            const nextListSiteData: SiteData = {
+                department: siteData.department,
+                isPinned: false,
+                isList: true,
+                dateString: '',
+            };
+            await this.addVaryingRequest(requestQueue, {
+                url: nextList,
+                userData: nextListSiteData,
+            });
         } else {
             throw new TypeError('Selector is undefined');
         }
     };
 }
 
-export const cba = new CbaCrawler({
-    departmentName: '경영대학',
-    departmentCode: 'cba', // this value must be equal to the filename
-    departmentCollege: CBA,
-    baseUrl: 'https://cba.snu.ac.kr/ko/notice',
+export const biosci = new BiosciCrawler({
+    departmentName: '생명과학부',
+    departmentCode: 'biosci', // this value must be equal to the filename
+    departmentCollege: SCIENCE,
+    baseUrl: 'https://biosci.snu.ac.kr/board/notice',
 });

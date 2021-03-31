@@ -24,6 +24,7 @@ import { aerospace } from './engineering/aerospace';
 import { humanities } from './humanities/humanities';
 import { econ } from './social/econ';
 import { nursing } from './nursing/nursing';
+import { cba } from './cba/cba';
 
 export const routeList: ((connection: Connection) => Promise<void>)[] = [
     cse.startCrawl,
@@ -51,4 +52,5 @@ export const routeList: ((connection: Connection) => Promise<void>)[] = [
     econ.startCrawl,
     humanities.startCrawl,
     nursing.startCrawl,
+    cba.startCrawl,
 ];

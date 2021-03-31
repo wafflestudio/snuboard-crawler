@@ -34,7 +34,7 @@ export async function saveNotice(notice: Notice): Promise<Notice> {
         if (!notice.hasId()) {
             notice.cursor = 0;
             await transactionalEntityManager.save(notice);
-            notice.cursor = notice.createdAt.getTime() + (notice.id % 1000);
+            notice.cursor = notice.createdAt.getTime() * 100 + (notice.id % 100000);
         }
         await transactionalEntityManager.save(notice);
     });
@@ -44,6 +44,16 @@ export async function saveNotice(notice: Notice): Promise<Notice> {
 export function absoluteLink(link: string | undefined, baseUrl: string): string | undefined {
     if (link === undefined) return undefined;
     return new URL(link, baseUrl).href;
+}
+
+export function removeUrlPageParam(link: string | undefined): string | undefined {
+    if (link === undefined) return undefined;
+    const pageUrl = new URL(link);
+    if (!pageUrl) return undefined;
+    pageUrl.searchParams.delete('page');
+    link = pageUrl.href;
+
+    return link;
 }
 
 export function parseTitle(titleText: string): TitleAndTags {

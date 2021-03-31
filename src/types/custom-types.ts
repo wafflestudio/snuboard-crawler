@@ -28,3 +28,9 @@ export interface TitleAndTags {
     title: string;
     tags: string[];
 }
+
+export interface CrawlerOption {
+    timeout?: number;
+    startUrl?: string;
+    isList?: boolean;
+}

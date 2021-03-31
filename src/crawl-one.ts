@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import * as Apify from 'apify';
+import yargs from 'yargs';
 import { createDBConnection } from './database.js';
 import { crawlerList } from './routes/routeList';
 import { createOctokit } from './github';
@@ -13,16 +14,35 @@ crawlerList.map((c) => {
     crawlers[c.departmentCode] = c;
 });
 
-if (process.argv[2] === undefined) {
-    console.log('Please enter the department code as the 1st command line argument');
-    process.exit();
-}
+const args = yargs(process.argv.slice(2))
+    .options({
+        timeout: { type: 'number', demandOption: false },
+        startUrl: { type: 'string', demandOption: false },
+        isList: { type: 'boolean', demandOption: false },
+    })
+    .check((argv) => {
+        const departmentCode = argv._[0];
+        if (!departmentCode) {
+            throw new Error('Please enter the department code as the 1st command line argument');
+        }
+        if (!crawlers[departmentCode]) {
+            throw new Error(`Cannot find department '${departmentCode}'`);
+        }
+        if (argv.startUrl && argv.isList === undefined) {
+            throw new Error(`--isList is required when --startUrl is set`);
+        }
+        return true;
+    }).argv;
 
 Apify.main(async () => {
     const connection = await createDBConnection();
     await createOctokit();
     log.info('Starting the crawl.');
-    await crawlers[process.argv[2]].startCrawl(connection);
+    await crawlers[args._[0]].startCrawl(connection, {
+        timeout: args.timeout,
+        startUrl: args.startUrl,
+        isList: args.startUrl ? args.isList : undefined,
+    });
     log.info('Crawl finished.');
     await connection.close();
 });

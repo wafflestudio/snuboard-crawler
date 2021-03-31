@@ -7,7 +7,7 @@ import assert from 'assert';
 import { strptime } from '../micro-strptime';
 import { File, Notice } from '../../server/src/notice/notice.entity';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
-import { CategoryCrawlerInit, CategoryTag, SiteData } from '../types/custom-types';
+import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
 
@@ -157,7 +157,7 @@ export class CategoryCrawler extends Crawler {
         }
     };
 
-    startCrawl = async (connection: Connection): Promise<void> => {
+    startCrawl = async (connection: Connection, crawlerOption?: CrawlerOption): Promise<void> => {
         assert(connection.isConnected);
         this.log.info('Starting crawl for '.concat(this.departmentName));
         const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
@@ -167,18 +167,29 @@ export class CategoryCrawler extends Crawler {
         });
 
         // department-specific initialization urls
-        const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
+        const siteData: SiteData = {
+            department,
+            isList: crawlerOption?.isList ?? true,
+            isPinned: false,
+            dateString: '',
+        };
         const categories: string[] = Object.keys(this.categoryTags);
 
-        await Promise.all(
-            categories.map(async (category) => {
-                await this.addVaryingRequest(requestQueue, {
-                    url: this.baseUrl + category,
-                    userData: siteData,
-                });
-            }),
-        );
-
-        await this.runCrawler(requestQueue, this.handlePage, this.handleList);
+        if (crawlerOption && crawlerOption?.startUrl) {
+            await this.addVaryingRequest(requestQueue, {
+                url: crawlerOption.startUrl,
+                userData: siteData,
+            });
+        } else {
+            await Promise.all(
+                categories.map(async (category) => {
+                    await this.addVaryingRequest(requestQueue, {
+                        url: this.baseUrl + category,
+                        userData: siteData,
+                    });
+                }),
+            );
+        }
+        await this.runCrawler(requestQueue, this.handlePage, this.handleList, crawlerOption);
     };
 }

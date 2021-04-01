@@ -40,7 +40,7 @@ export const routeList: ((connection: Connection) => Promise<void>)[] = [
     math.startCrawl,
     physics.startCrawl,
     sees.startCrawl,
-    chem.startCrawl,
+    // chem.startCrawl,
     ir.startCrawl,
     snuPharm.startCrawl,
     vet.startCrawl,

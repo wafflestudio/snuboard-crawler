@@ -68,7 +68,7 @@ export abstract class Crawler {
         handlePage: (inputs: CheerioHandlePageInputs) => Promise<void>,
         handleList: (inputs: CheerioHandlePageInputs, queue: RequestQueue) => Promise<void>,
     ): Promise<void> {
-        const timeout = 1;
+        const timeout = 10;
         const errorIssueMapping = new Map<string, number>();
         const startTimeString = `${new Date().toLocaleString('ko-KR', {
             timeZone: 'Asia/Seoul',

@@ -29,7 +29,6 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
 }
 
 export async function saveNotice(notice: Notice): Promise<Notice> {
-    //  save notice
     await getConnection().transaction('READ COMMITTED', async (transactionalEntityManager) => {
         await transactionalEntityManager.save(notice);
     });

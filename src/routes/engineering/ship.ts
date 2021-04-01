@@ -33,7 +33,7 @@ class ShipCrawler extends Crawler {
             content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
-            notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
 
             try {
                 const fullDateString: string = $('div.date').text().trim();

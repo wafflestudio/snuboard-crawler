@@ -18,7 +18,7 @@ Apify.main(async () => {
         async (startCrawl) => {
             await startCrawl(connection);
         },
-        { concurrency: 2 },
+        { concurrency: +(process.env.MAX_CONCURRENCY ?? '10') },
     );
     log.info('Crawl finished.');
     await connection.close();

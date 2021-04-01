@@ -36,7 +36,7 @@ class MathCrawler extends CategoryCrawler {
             content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
-            notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
             const fullDateString: string = $('div.dateAndCount div.date').text().trim();
             // example: '2021-02-26 11:34:01'
             notice.createdAt = strptime(fullDateString, '%Y.%m.%d %H:%M:%S');

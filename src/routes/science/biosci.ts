@@ -114,7 +114,7 @@ export class BiosciCrawler extends Crawler {
                 });
             });
 
-            const nextList = absoluteLink($('.pagination-01 ul.pager li.next a').attr('href'), url);
+            const nextList = absoluteLink($('ul.pager li.next a').attr('href'), url);
             if (nextList === url || nextList === undefined) return;
 
             this.log.info('Enqueueing list', { nextList });

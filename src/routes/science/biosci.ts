@@ -35,7 +35,7 @@ export class BiosciCrawler extends Crawler {
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
-            notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
 
             notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
             notice.isPinned = siteData.isPinned;

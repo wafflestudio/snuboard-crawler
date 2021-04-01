@@ -1,11 +1,11 @@
-import { Crawler } from '../../classes/crawler';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { load } from 'cheerio';
+import { RequestQueue } from 'apify';
+import { Crawler } from '../../classes/crawler';
 import { SiteData } from '../../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { load } from 'cheerio';
 import { strptime } from '../../micro-strptime';
-import { RequestQueue } from 'apify';
 import { SCIENCE } from '../../constants';
 
 class SeesCrawler extends Crawler {
@@ -36,7 +36,7 @@ class SeesCrawler extends Crawler {
             content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
-            notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
 
             notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
 

@@ -31,7 +31,7 @@ class PhysicsCrawler extends Crawler {
             content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
-            notice.preview = contentElement.text().substring(0, 1000).trim(); // texts are automatically utf-8 encoded
+            notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
             // example: '2021-02-26 11:34:01'
             notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
 

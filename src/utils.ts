@@ -29,13 +29,8 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
 }
 
 export async function saveNotice(notice: Notice): Promise<Notice> {
-    // populate notice.cursor and save notice
+    //  save notice
     await getConnection().transaction('READ COMMITTED', async (transactionalEntityManager) => {
-        if (!notice.hasId()) {
-            notice.cursor = 0;
-            await transactionalEntityManager.save(notice);
-            notice.cursor = notice.createdAt.getTime() * 100 + (notice.id % 100000);
-        }
         await transactionalEntityManager.save(notice);
     });
     return notice;

@@ -20,7 +20,7 @@ jobs:
       mysql:
         image: mysql:8
         env:
-          MYSQL_DATABASE: github-actions
+          MYSQL_DATABASE: github_actions
           MYSQL_ROOT_PASSWORD: password
         options: >-
           --health-cmd "mysqladmin ping"

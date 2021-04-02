@@ -15,25 +15,24 @@ jobs:
       matrix:
         node-version: [ 12.x, 15.x ]
 
-
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_DATABASE: github-actions
-          MYSQL_ROOT_PASSWORD: password
-        options: >-
-          --health-cmd "mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 3306:3306
-
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: Shutdown Ubuntu MySQL
+        run: sudo service mysql stop
+
+      - name: Set up MariaDB
+        uses: gyusang/mariadb-action@master
+        with:
+          mariadb version: '10.4.8'
+          mysql database: 'github_actions'
+          mysql root password: 'password'
+
+      - name: Check MariaDB
+        run: while true; do mysqladmin -uroot -ppassword -h127.0.0.1 ping; sleep 10; done
+
       - name: Install dependencies
         run: npm ci
 

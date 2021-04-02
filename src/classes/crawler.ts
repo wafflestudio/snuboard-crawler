@@ -74,6 +74,7 @@ export abstract class Crawler {
             timeZone: 'Asia/Seoul',
         })} KST`;
         const crawler = new Apify.CheerioCrawler({
+            useSessionPool: false,
             requestQueue,
             maxConcurrency: 1,
             maxRequestRetries: this.maxRetries,

@@ -41,7 +41,7 @@ export const crawlerList: Crawler[] = [
     math,
     physics,
     sees,
-    chem,
+    // chem,
     ir,
     snuPharm,
     vet,
@@ -55,5 +55,4 @@ export const crawlerList: Crawler[] = [
     nursing,
     cba,
 ];
-
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

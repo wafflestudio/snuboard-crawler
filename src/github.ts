@@ -42,7 +42,7 @@ export function getOctokit(): Octokit {
 }
 
 export async function createIssue(title: string, body: string | undefined): Promise<number> {
-    if (ENV !== 'prod') {
+    if (ENV !== 'production') {
         return 0;
     }
 
@@ -56,7 +56,7 @@ export async function createIssue(title: string, body: string | undefined): Prom
 }
 
 export async function appendIssue(issueNumber: number, appendedBody: string): Promise<void> {
-    if (ENV !== 'prod') {
+    if (ENV !== 'production') {
         return;
     }
 

@@ -32,7 +32,7 @@ const args = yargs(process.argv.slice(2))
             throw new Error(`crawl-one: --isList is required when --startUrl is set`);
         }
         if (argv.startUrl) {
-            const departmentName = argv.startUrl.match('://(.*).snu')?.[1];
+            const departmentName = argv.startUrl.match(/:\/\/(.+)\.snu\.ac\.kr/)?.[1];
             if (!departmentName || !crawlers[departmentName]) {
                 throw new Error(`crawl-one: Invalid startUrl`);
             }

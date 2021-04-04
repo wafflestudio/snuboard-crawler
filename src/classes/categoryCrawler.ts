@@ -175,7 +175,7 @@ export class CategoryCrawler extends Crawler {
         };
         const categories: string[] = Object.keys(this.categoryTags);
 
-        if (crawlerOption && crawlerOption?.startUrl) {
+        if (crawlerOption && crawlerOption.startUrl) {
             await this.addVaryingRequest(requestQueue, {
                 url: crawlerOption.startUrl,
                 userData: siteData,

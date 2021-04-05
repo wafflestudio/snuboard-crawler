@@ -23,23 +23,24 @@ const args = yargs(process.argv.slice(2))
     .check((argv) => {
         const departmentCode = argv._[0];
         if (!departmentCode) {
-            throw new Error('crawl-one: Please enter the department code as the 1st command line argument');
+            throw new Error('crawl-one: a department code is required');
         }
         if (!crawlers[departmentCode]) {
-            throw new Error(`crawl-one: Cannot find department '${departmentCode}'`);
+            throw new Error(`crawl-one: cannot find department '${departmentCode}'`);
         }
         if (argv.startUrl && argv.isList === undefined) {
             throw new Error(`crawl-one: --isList is required when --startUrl is set`);
         }
         if (argv.startUrl) {
             const departmentName = argv.startUrl.match(/:\/\/(.+)\.snu\.ac\.kr/)?.[1];
-            if (!departmentName || !crawlers[departmentName]) {
-                throw new Error(`crawl-one: Invalid startUrl`);
+            if (!departmentName) {
+                throw new Error(`crawl-one: invalid startUrl, cannot parse a department name from startUrl`);
+            }
+            if (!crawlers[departmentName]) {
+                throw new Error(`crawl-one: invalid startUrl, cannot find department '${departmentName}'`);
             }
             if (departmentName !== departmentCode) {
-                throw new Error(
-                    `crawl-one: departmentName name in 'startUrl' does not match with the 1st command line argument`,
-                );
+                throw new Error(`crawl-one: the department name in startUrl and the department code must be same`);
             }
         }
         return true;

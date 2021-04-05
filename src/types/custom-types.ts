@@ -29,6 +29,12 @@ export interface TitleAndTags {
     tags: string[];
 }
 
+export interface CrawlerOption {
+    timeout?: number;
+    startUrl?: string;
+    isList?: boolean;
+}
+
 export interface ChemPageSummary {
     seqno: string;
     title: string;

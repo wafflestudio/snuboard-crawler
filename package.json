@@ -32,7 +32,8 @@
 		"lint-staged": "^10.5.4",
 		"prettier": "^2.2.1",
 		"ts-jest": "^26.5.1",
-		"typescript": "^4.1.5"
+		"typescript": "^4.1.5",
+		"yargs": "^16.2.0"
 	},
 	"scripts": {
 		"prestart": "npm run build",
@@ -44,7 +45,9 @@
 		"clean": "rm -rf apify_storage",
 		"test": "jest",
 		"coverage": "jest --coverage",
-		"update": "git submodule update --remote"
+		"update": "git submodule update --remote",
+		"precrawl-one": "npm run build",
+		"crawl-one": "node dist/src/crawl-one.js"
 	},
 	"lint-staged": {
 		"src/**/*.{js,json,ts}": [

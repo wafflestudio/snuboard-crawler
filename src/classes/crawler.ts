@@ -5,14 +5,14 @@ import { Connection } from 'typeorm';
 import assert from 'assert';
 import Request, { RequestOptions } from 'apify/types/request';
 import { appendIssue, createIssue } from '../github';
-import { CrawlerInit, SiteData } from '../types/custom-types';
+import { CrawlerInit, CrawlerOption, SiteData } from '../types/custom-types';
 import { getOrCreate } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
 
 export abstract class Crawler {
     protected readonly departmentName: string;
 
-    protected readonly departmentCode: string;
+    public readonly departmentCode: string;
 
     protected readonly departmentCollege: string;
 
@@ -44,7 +44,7 @@ export abstract class Crawler {
 
     abstract handleList(context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void>;
 
-    startCrawl = async (connection: Connection): Promise<void> => {
+    startCrawl = async (connection: Connection, crawlerOption?: CrawlerOption): Promise<void> => {
         assert(connection.isConnected);
         this.log.info('Starting crawl for '.concat(this.departmentName));
         const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
@@ -54,21 +54,27 @@ export abstract class Crawler {
         });
 
         // department-specific initialization urls
-        const siteData: SiteData = { department, isList: true, isPinned: false, dateString: '' };
+        const siteData: SiteData = {
+            department,
+            isList: crawlerOption?.isList ?? true,
+            isPinned: false,
+            dateString: '',
+        };
         await this.addVaryingRequest(requestQueue, {
-            url: this.baseUrl,
+            url: crawlerOption?.startUrl ?? this.baseUrl,
             userData: siteData,
         });
 
-        await this.runCrawler(requestQueue, this.handlePage, this.handleList);
+        await this.runCrawler(requestQueue, this.handlePage, this.handleList, crawlerOption);
     };
 
     async runCrawler(
         requestQueue: RequestQueue,
         handlePage: (inputs: CheerioHandlePageInputs) => Promise<void>,
         handleList: (inputs: CheerioHandlePageInputs, queue: RequestQueue) => Promise<void>,
+        crawlerOption?: CrawlerOption,
     ): Promise<void> {
-        const timeout = 10;
+        const timeout = crawlerOption?.timeout ?? 10;
         const errorIssueMapping = new Map<string, number>();
         const startTimeString = `${new Date().toLocaleString('ko-KR', {
             timeZone: 'Asia/Seoul',

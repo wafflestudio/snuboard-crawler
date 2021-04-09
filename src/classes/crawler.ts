@@ -8,6 +8,7 @@ import { appendIssue, createIssue } from '../github';
 import { CrawlerInit, CrawlerOption, SiteData } from '../types/custom-types';
 import { getOrCreate } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
+import { listExists } from '../database';
 
 export abstract class Crawler {
     protected readonly departmentName: string;
@@ -54,17 +55,21 @@ export abstract class Crawler {
         });
 
         // department-specific initialization urls
-        const siteData: SiteData = {
-            department,
-            isList: crawlerOption?.isList ?? true,
-            isPinned: false,
-            dateString: '',
-        };
-        await this.addVaryingRequest(requestQueue, {
-            url: crawlerOption?.startUrl ?? this.baseUrl,
-            userData: siteData,
-        });
-
+        if (!(await listExists(this.departmentCode))) {
+            const siteData: SiteData = {
+                department,
+                isList: crawlerOption?.isList ?? true,
+                isPinned: false,
+                dateString: '',
+            };
+            this.log.info('Adding baseUrl');
+            await this.addVaryingRequest(requestQueue, {
+                url: crawlerOption?.startUrl ?? this.baseUrl,
+                userData: siteData,
+            });
+        } else {
+            this.log.info('Skipping adding baseUrl, since a list is already enqueued');
+        }
         await this.runCrawler(requestQueue, this.handlePage, this.handleList, crawlerOption);
     };
 

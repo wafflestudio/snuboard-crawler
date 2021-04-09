@@ -10,6 +10,7 @@ import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils
 import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
+import { listExists } from '../database';
 
 export class CategoryCrawler extends Crawler {
     protected readonly categoryTags: CategoryTag;
@@ -183,10 +184,16 @@ export class CategoryCrawler extends Crawler {
         } else {
             await Promise.all(
                 categories.map(async (category) => {
-                    await this.addVaryingRequest(requestQueue, {
-                        url: this.baseUrl + category,
-                        userData: siteData,
-                    });
+                    const categoryUrl = this.baseUrl + category;
+                    if (!(await listExists(this.departmentCode, categoryUrl))) {
+                        this.log.info(`Adding category ${category}`);
+                        await this.addVaryingRequest(requestQueue, {
+                            url: categoryUrl,
+                            userData: siteData,
+                        });
+                    } else {
+                        this.log.info(`Skipping adding category ${category}, since a list is already enqueued`);
+                    }
                 }),
             );
         }

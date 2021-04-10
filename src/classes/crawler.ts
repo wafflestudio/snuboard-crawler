@@ -58,19 +58,29 @@ export abstract class Crawler {
         });
         this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
-        if (!(await listExists(this.requestQueueDB))) {
-            const siteData: SiteData = {
-                department,
-                isList: crawlerOption?.isList ?? true,
-                isPinned: false,
-                dateString: '',
-                commonUrl: null,
-            };
+        const siteData: SiteData = {
+            department,
+            isList: crawlerOption?.isList ?? true,
+            isPinned: false,
+            dateString: '',
+            commonUrl: null,
+        };
+        if (crawlerOption && crawlerOption.startUrl) {
+            this.log.info('Adding startUrl', { startUrl: crawlerOption.startUrl });
+            await this.addVaryingRequest(
+                requestQueue,
+                {
+                    url: crawlerOption?.startUrl,
+                    userData: siteData,
+                },
+                siteData.commonUrl,
+            );
+        } else if (!(await listExists(this.requestQueueDB))) {
             this.log.info('Adding baseUrl');
             await this.addVaryingRequest(
                 requestQueue,
                 {
-                    url: crawlerOption?.startUrl ?? this.baseUrl,
+                    url: this.baseUrl,
                     userData: siteData,
                 },
                 siteData.commonUrl,

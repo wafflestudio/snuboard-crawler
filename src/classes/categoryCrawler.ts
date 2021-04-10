@@ -10,7 +10,7 @@ import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils
 import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
-import { listExists } from '../database';
+import { createRequestQueueConnection, listExists } from '../database';
 
 export class CategoryCrawler extends Crawler {
     protected readonly categoryTags: CategoryTag;
@@ -147,11 +147,16 @@ export class CategoryCrawler extends Crawler {
                     isPinned: false,
                     isList: true,
                     dateString: '',
+                    commonUrl: siteData.commonUrl,
                 };
-                await this.addVaryingRequest(requestQueue, {
-                    url: nextList,
-                    userData: nextListSiteData,
-                });
+                await this.addVaryingRequest(
+                    requestQueue,
+                    {
+                        url: nextList,
+                        userData: nextListSiteData,
+                    },
+                    nextListSiteData.commonUrl,
+                );
             }
         } else {
             throw new TypeError('Selector is undefined');
@@ -166,31 +171,48 @@ export class CategoryCrawler extends Crawler {
             name: this.departmentName,
             college: this.departmentCollege,
         });
-
+        this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
-        const siteData: SiteData = {
-            department,
-            isList: crawlerOption?.isList ?? true,
-            isPinned: false,
-            dateString: '',
-        };
         const categories: string[] = Object.keys(this.categoryTags);
 
         if (crawlerOption && crawlerOption.startUrl) {
-            await this.addVaryingRequest(requestQueue, {
-                url: crawlerOption.startUrl,
-                userData: siteData,
-            });
+            const siteData: SiteData = {
+                department,
+                isList: crawlerOption?.isList ?? true,
+                isPinned: false,
+                dateString: '',
+                commonUrl: null, // crawl-one can only run after all lists are cleared.
+            };
+            await this.addVaryingRequest(
+                requestQueue,
+                {
+                    url: crawlerOption.startUrl,
+                    userData: siteData,
+                },
+                siteData.commonUrl,
+            );
         } else {
             await Promise.all(
                 categories.map(async (category) => {
                     const categoryUrl = this.baseUrl + category;
-                    if (!(await listExists(this.departmentCode, categoryUrl))) {
+                    const siteData: SiteData = {
+                        department,
+                        isList: crawlerOption?.isList ?? true,
+                        isPinned: false,
+                        dateString: '',
+                        commonUrl: categoryUrl,
+                    };
+                    assert(this.requestQueueDB !== undefined);
+                    if (!(await listExists(this.requestQueueDB, categoryUrl))) {
                         this.log.info(`Adding category ${category}`);
-                        await this.addVaryingRequest(requestQueue, {
-                            url: categoryUrl,
-                            userData: siteData,
-                        });
+                        await this.addVaryingRequest(
+                            requestQueue,
+                            {
+                                url: categoryUrl,
+                                userData: siteData,
+                            },
+                            siteData.commonUrl,
+                        );
                     } else {
                         this.log.info(`Skipping adding category ${category}, since a list is already enqueued`);
                     }

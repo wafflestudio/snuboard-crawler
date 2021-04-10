@@ -55,7 +55,7 @@ class SeesCrawler extends Crawler {
                         file.name = $(element).text().trim();
 
                         const fileLinkInstance = new URL(absoluteLink('/cmm/fms/FileDown.do?', this.baseUrl) ?? '');
-                        let params = fileUrl.match(/'[^\']+'/g) ?? [];
+                        let params = fileUrl.match(/'[^']+'/g) ?? [];
                         params = params.map((param) => {
                             param.substring(1, param.length - 1);
                             return param.substring(1, param.length - 1);
@@ -130,11 +130,16 @@ class SeesCrawler extends Crawler {
                     isPinned: false,
                     isList: true,
                     dateString: '',
+                    commonUrl: siteData.commonUrl,
                 };
-                await this.addVaryingRequest(requestQueue, {
-                    url: nextList,
-                    userData: nextListSiteData,
-                });
+                await this.addVaryingRequest(
+                    requestQueue,
+                    {
+                        url: nextList,
+                        userData: nextListSiteData,
+                    },
+                    nextListSiteData.commonUrl,
+                );
             }
         } else {
             throw new TypeError('Selector is undefined');

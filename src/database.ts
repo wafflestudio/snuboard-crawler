@@ -46,15 +46,14 @@ export async function getSqlite(db: sqlite3.Database, sql: string, params?: any[
     });
 }
 
-export async function listExists(departmentCode: string, url?: string): Promise<boolean> {
-    const db = await createRequestQueueConnection(departmentCode);
-
+export async function listExists(db: sqlite3.Database, url?: string): Promise<boolean> {
     let result;
     if (url !== undefined) {
         result = await getSqlite(
             db,
-            `SELECT id FROM request_queues_requests WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":true%' AND url LIKE ? LIMIT 1;`,
-            [`${url}%`],
+            `SELECT id FROM request_queues_requests 
+             WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":true%' AND json LIKE ? ESCAPE ? LIMIT 1;`,
+            [`%"commonUrl":"${url.replace('%', '\\%').replace('_', '\\_')}"%`, '\\'],
         );
     } else {
         result = await getSqlite(
@@ -63,6 +62,10 @@ export async function listExists(departmentCode: string, url?: string): Promise<
         );
     }
 
+    return result?.id !== undefined;
+}
+
+export async function closeSqliteDB(db: sqlite3.Database): Promise<void> {
     await new Promise((resolve, reject) => {
         db.close((err) => {
             if (err) {
@@ -72,5 +75,31 @@ export async function listExists(departmentCode: string, url?: string): Promise<
             }
         });
     });
+}
+
+export async function urlInQueue(db: sqlite3.Database, url: string): Promise<boolean> {
+    const result = await getSqlite(
+        db,
+        `SELECT id FROM request_queues_requests WHERE json NOT LIKE '%"handledAt":%' AND url=? LIMIT 1;`,
+        [url],
+    );
     return result?.id !== undefined;
+}
+
+export async function listCount(db: sqlite3.Database, commonUrl: string | null): Promise<number> {
+    let result;
+    if (commonUrl === null) {
+        result = await getSqlite(
+            db,
+            `SELECT COUNT(*) FROM request_queues_requests WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":true%';`,
+        );
+    } else {
+        result = await getSqlite(
+            db,
+            `SELECT COUNT(*) FROM request_queues_requests 
+             WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":true%' AND json LIKE ? ESCAPE ?;`,
+            [`%"commonUrl":"${commonUrl.replace('%', '\\%').replace('_', '\\_')}"%`, '\\'],
+        );
+    }
+    return result['COUNT(*)'];
 }

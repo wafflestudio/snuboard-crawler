@@ -4,11 +4,12 @@ import { RequestQueue } from 'apify';
 import { Connection } from 'typeorm';
 import assert from 'assert';
 import Request, { RequestOptions } from 'apify/types/request';
+import * as sqlite3 from 'sqlite3';
 import { appendIssue, createIssue } from '../github';
 import { CrawlerInit, CrawlerOption, SiteData } from '../types/custom-types';
 import { getOrCreate } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
-import { listExists } from '../database';
+import { closeSqliteDB, createRequestQueueConnection, listCount, listExists, urlInQueue } from '../database';
 
 export abstract class Crawler {
     protected readonly departmentName: string;
@@ -26,6 +27,8 @@ export abstract class Crawler {
     protected readonly maxRetries: number;
 
     protected readonly log;
+
+    protected requestQueueDB?: sqlite3.Database;
 
     public constructor(initData: CrawlerInit) {
         this.departmentName = initData.departmentName;
@@ -53,24 +56,30 @@ export abstract class Crawler {
             name: this.departmentName,
             college: this.departmentCollege,
         });
-
+        this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
-        if (!(await listExists(this.departmentCode))) {
+        if (!(await listExists(this.requestQueueDB))) {
             const siteData: SiteData = {
                 department,
                 isList: crawlerOption?.isList ?? true,
                 isPinned: false,
                 dateString: '',
+                commonUrl: null,
             };
             this.log.info('Adding baseUrl');
-            await this.addVaryingRequest(requestQueue, {
-                url: crawlerOption?.startUrl ?? this.baseUrl,
-                userData: siteData,
-            });
+            await this.addVaryingRequest(
+                requestQueue,
+                {
+                    url: crawlerOption?.startUrl ?? this.baseUrl,
+                    userData: siteData,
+                },
+                siteData.commonUrl,
+            );
         } else {
             this.log.info('Skipping adding baseUrl, since a list is already enqueued');
         }
         await this.runCrawler(requestQueue, this.handlePage, this.handleList, crawlerOption);
+        await closeSqliteDB(this.requestQueueDB);
     };
 
     async runCrawler(
@@ -123,8 +132,23 @@ export abstract class Crawler {
         await crawler.run();
     }
 
-    async addVaryingRequest(requestQueue: RequestQueue, requestLike: Request | RequestOptions): Promise<void> {
-        requestLike.uniqueKey = `${this.startTime}${requestLike.url}`;
-        await requestQueue.addRequest(requestLike);
+    async addVaryingRequest(
+        requestQueue: RequestQueue,
+        requestLike: Request | RequestOptions,
+        commonUrl: string | null | undefined,
+    ): Promise<void> {
+        if (this.requestQueueDB === undefined) throw Error('requestQueueDB must be initialized');
+        if (commonUrl === undefined) throw Error('commonUrl must be either string or null');
+        if (await urlInQueue(this.requestQueueDB, requestLike.url)) {
+            this.log.info(`Skipping Enqueue list ${requestLike.url} since it is already in queue`);
+        } else if ((await listCount(this.requestQueueDB, commonUrl)) > 1) {
+            // 1 is the currently running list.
+            this.log.info(
+                `Skipping Enqueue list ${requestLike.url} since url starting with ${commonUrl} is already running`,
+            );
+        } else {
+            requestLike.uniqueKey = `${this.startTime}${requestLike.url}`;
+            await requestQueue.addRequest(requestLike);
+        }
     }
 }

@@ -125,11 +125,16 @@ class MathCrawler extends CategoryCrawler {
                     isPinned: false,
                     isList: true,
                     dateString: '',
+                    commonUrl: siteData.commonUrl,
                 };
-                await this.addVaryingRequest(requestQueue, {
-                    url: nextList,
-                    userData: nextListSiteData,
-                });
+                await this.addVaryingRequest(
+                    requestQueue,
+                    {
+                        url: nextList,
+                        userData: nextListSiteData,
+                    },
+                    nextListSiteData.commonUrl,
+                );
             }
         } else {
             throw new TypeError('Selector is undefined');

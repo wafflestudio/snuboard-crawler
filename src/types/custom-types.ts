@@ -6,6 +6,7 @@ export interface SiteData {
     isList: boolean;
     dateString: string;
     tag?: string;
+    commonUrl?: string | null;
 }
 
 export interface CategoryTag {

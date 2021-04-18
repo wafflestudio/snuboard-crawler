@@ -140,6 +140,7 @@ export abstract class Crawler {
         });
 
         await crawler.run();
+        this.log.info('Crawler Ended');
     }
 
     async addVaryingRequest(

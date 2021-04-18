@@ -220,5 +220,6 @@ export class CategoryCrawler extends Crawler {
             );
         }
         await this.runCrawler(requestQueue, this.handlePage, this.handleList, crawlerOption);
+        this.log.info('Crawler Ended');
     };
 }

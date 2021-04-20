@@ -9,7 +9,14 @@ import { appendIssue, createIssue } from '../github';
 import { CrawlerInit, CrawlerOption, SiteData } from '../types/custom-types';
 import { getOrCreate } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
-import { closeSqliteDB, createRequestQueueConnection, listCount, listExists, urlInQueue } from '../database';
+import {
+    closeSqliteDB,
+    createRequestQueueConnection,
+    isBasePushCondition,
+    listCount,
+    listExists,
+    urlInQueue,
+} from '../database';
 
 export abstract class Crawler {
     protected readonly departmentName: string;
@@ -75,7 +82,7 @@ export abstract class Crawler {
                 },
                 siteData.commonUrl,
             );
-        } else if (!(await listExists(this.requestQueueDB))) {
+        } else if (await isBasePushCondition(this.requestQueueDB)) {
             this.log.info('Adding baseUrl');
             await this.addVaryingRequest(
                 requestQueue,
@@ -86,7 +93,7 @@ export abstract class Crawler {
                 siteData.commonUrl,
             );
         } else {
-            this.log.info('Skipping adding baseUrl, since a list is already enqueued');
+            this.log.info('Skipping adding baseUrl');
         }
         await this.runCrawler(requestQueue, this.handlePage, this.handleList, crawlerOption);
         await closeSqliteDB(this.requestQueueDB);

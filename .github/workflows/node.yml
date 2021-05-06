@@ -42,6 +42,8 @@ jobs:
 
       - name: Migrate DB
         run: ./node_modules/.bin/typeorm migration:run -f dist/server/src/ormconfig.js
+        env:
+          NODE_ENV: ci
 
       - name: Test
         run: npm run test

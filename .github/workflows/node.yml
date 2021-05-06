@@ -40,6 +40,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Migrate DB
+        run: ./node_modules/.bin/typeorm migration:run -f dist/src/ormconfig.js
+        env:
+          NODE_ENV: ci
+
       - name: Test
         run: npm run test
         env:

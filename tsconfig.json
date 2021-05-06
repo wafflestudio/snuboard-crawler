@@ -82,6 +82,8 @@
   "include": [
     "src/**/*",
     "tests/**/*",
-    "server/src/**/*.entity.ts"
+    "server/src/**/*.entity.ts",
+    "server/src/migration/*.ts",
+    "server/src/ormconfig.ts",
   ],
 }

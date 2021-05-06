@@ -41,7 +41,7 @@ jobs:
         run: npm run build
 
       - name: Migrate DB
-        run: typeorm migration:run -f dist/server/src/ormconfig.js
+        run: ./node_modules/.bin/typeorm migration:run -f dist/server/src/ormconfig.js
 
       - name: Test
         run: npm run test

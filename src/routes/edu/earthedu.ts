@@ -3,7 +3,7 @@ import { EDU } from '../../constants';
 
 export const earthEdu = new CategoryCrawler({
     departmentName: '지구과학교육과',
-    departmentCode: 'earthEdu',
+    departmentCode: 'earthedu',
     departmentCollege: EDU,
     baseUrl: 'https://earthedu.snu.ac.kr/ko/board/',
     categoryTags: {

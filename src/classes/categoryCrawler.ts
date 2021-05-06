@@ -183,7 +183,7 @@ export class CategoryCrawler extends Crawler {
         // department-specific initialization urls
         const categories: string[] = Object.keys(this.categoryTags);
 
-        // this must consider about tag. only some usage will work properly
+        // this must consider about tag. adding tag by using CategoryTag will not work
         if (crawlerOption && crawlerOption.startUrl) {
             const siteData: SiteData = {
                 department,

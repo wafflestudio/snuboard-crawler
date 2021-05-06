@@ -2,7 +2,7 @@ import * as path from 'path';
 import { Connection, createConnection } from 'typeorm';
 import * as sqlite3 from 'sqlite3';
 import { TRUE_STRING } from './constants';
-import ormConfig from '../server/src/ormconfig';
+import ormConfig from './ormconfig';
 
 export async function createDBConnection(): Promise<Connection> {
     return createConnection(ormConfig);

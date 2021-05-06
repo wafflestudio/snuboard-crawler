@@ -16,7 +16,7 @@ export async function createDBConnection(): Promise<Connection> {
             path.resolve(__dirname, '../server/src/**/*.entity.js'),
             path.resolve(__dirname, '../server/src/**/*.entity.ts'),
         ],
-        synchronize: ENV !== 'production',
+        synchronize: false,
     });
 }
 

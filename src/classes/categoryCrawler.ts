@@ -34,7 +34,12 @@ export class CategoryCrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
+            $('img').each((index, element) => {
+                const imgSrc = $(element).attr('src');
+                if (imgSrc && !imgSrc.startsWith('data')) {
+                    $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
+                }
+            });
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
@@ -81,8 +86,8 @@ export class CategoryCrawler extends Crawler {
                     tags.push($(element).text().substring(4).trim());
                 });
             }
-            const category: string = url.split('/')[5];
-            if (this.categoryTags[category] && !tags.includes(this.categoryTags[category])) {
+            const category = siteData.tag;
+            if (category && this.categoryTags[category] && !tags.includes(this.categoryTags[category])) {
                 tags.push(this.categoryTags[category]);
             }
             tags = tags.filter((tag) => tag !== this.excludedTag);
@@ -103,7 +108,8 @@ export class CategoryCrawler extends Crawler {
             // example:  /ko/board/Scholarship/page/2 => ['', 'ko', 'board', 'Scholarship','page','2']
 
             $('table.lc01 tbody tr').each((index, element) => {
-                const isPinned = $(element).children('td').first().text().trim() === '공지';
+                const noticeNum = $(element).children('td').first().text().trim();
+                const isPinned = noticeNum === '공지' || noticeNum === 'Notice';
                 if (page > 1 && isPinned) return;
 
                 const titleElement = $($(element).find('a'));
@@ -118,6 +124,7 @@ export class CategoryCrawler extends Crawler {
                     isPinned,
                     isList: false,
                     dateString,
+                    tag: siteData.tag,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -148,6 +155,7 @@ export class CategoryCrawler extends Crawler {
                     isList: true,
                     dateString: '',
                     commonUrl: siteData.commonUrl,
+                    tag: siteData.tag,
                 };
                 await this.addVaryingRequest(
                     requestQueue,
@@ -175,6 +183,7 @@ export class CategoryCrawler extends Crawler {
         // department-specific initialization urls
         const categories: string[] = Object.keys(this.categoryTags);
 
+        // this must consider about tag. only some usage will work properly
         if (crawlerOption && crawlerOption.startUrl) {
             const siteData: SiteData = {
                 department,
@@ -201,6 +210,7 @@ export class CategoryCrawler extends Crawler {
                         isPinned: false,
                         dateString: '',
                         commonUrl: categoryUrl,
+                        tag: category,
                     };
                     assert(this.requestQueueDB !== undefined);
                     if (await isBasePushCondition(this.requestQueueDB, categoryUrl)) {

@@ -13,3 +13,5 @@ export const PHARM = '약학대학';
 export const MUSIC = '음악대학';
 export const MEDICINE = '의과대학';
 export const CLS = '자유전공학부';
+
+export const TRUE_STRING = ['True', 'true', 'TRUE'];

@@ -38,7 +38,7 @@ export const crawlerList: Crawler[] = [
     cee,
     architecture,
     mse,
-    math,
+    // math,
     physics,
     sees,
     // chem,

@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { Connection, createConnection } from 'typeorm';
 import * as sqlite3 from 'sqlite3';
+import { TRUE_STRING } from './constants';
 import ormConfig from '../server/src/ormconfig';
 
 export async function createDBConnection(): Promise<Connection> {
@@ -32,6 +33,27 @@ export async function getSqlite(db: sqlite3.Database, sql: string, params?: any[
             }
         });
     });
+}
+
+export async function isBasePushCondition(db: sqlite3.Database, url?: string): Promise<boolean> {
+    const EARLY_STOP = TRUE_STRING.includes(process.env.EARLY_STOP ?? '');
+
+    if (EARLY_STOP) return !(await listExists(db, url));
+    return isQueueEmpty(db, url);
+}
+
+export async function isQueueEmpty(db: sqlite3.Database, url?: string): Promise<boolean> {
+    let result;
+    if (url !== undefined) {
+        result = await getSqlite(db, `SELECT id FROM request_queues_requests WHERE json LIKE ? ESCAPE ? LIMIT 1;`, [
+            `%"commonUrl":"${url.replace('%', '\\%').replace('_', '\\_')}"%`,
+            '\\',
+        ]);
+    } else {
+        result = await getSqlite(db, `SELECT id FROM request_queues_requests LIMIT 1;`);
+    }
+
+    return result?.id === undefined;
 }
 
 export async function listExists(db: sqlite3.Database, url?: string): Promise<boolean> {

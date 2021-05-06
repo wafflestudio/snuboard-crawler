@@ -131,3 +131,7 @@ dist
 .env.prod
 *.pem
 *.lock
+
+# Crawler logs
+error.log*
+out.log*

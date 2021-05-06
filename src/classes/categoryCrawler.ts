@@ -10,7 +10,7 @@ import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils
 import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
-import { createRequestQueueConnection, listExists } from '../database';
+import { createRequestQueueConnection, isBasePushCondition, listExists } from '../database';
 
 export class CategoryCrawler extends Crawler {
     protected readonly categoryTags: CategoryTag;
@@ -203,7 +203,7 @@ export class CategoryCrawler extends Crawler {
                         commonUrl: categoryUrl,
                     };
                     assert(this.requestQueueDB !== undefined);
-                    if (!(await listExists(this.requestQueueDB, categoryUrl))) {
+                    if (await isBasePushCondition(this.requestQueueDB, categoryUrl)) {
                         this.log.info(`Adding category ${category}`);
                         await this.addVaryingRequest(
                             requestQueue,
@@ -214,11 +214,12 @@ export class CategoryCrawler extends Crawler {
                             siteData.commonUrl,
                         );
                     } else {
-                        this.log.info(`Skipping adding category ${category}, since a list is already enqueued`);
+                        this.log.info(`Skipping adding baseUrl of category ${category}`);
                     }
                 }),
             );
         }
         await this.runCrawler(requestQueue, this.handlePage, this.handleList, crawlerOption);
+        this.log.info('Crawler Ended');
     };
 }

@@ -1,7 +1,7 @@
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { EDU } from '../../constants';
 
-export const physEd = new CategoryCrawler({
+export const physed = new CategoryCrawler({
     departmentName: '물리교육과',
     departmentCode: 'physed',
     departmentCollege: EDU,
@@ -10,6 +10,7 @@ export const physEd = new CategoryCrawler({
         notice: '공지사항',
         Scholarship: '장학',
         event: '행사',
+        incruit: '취업 및 아르바이트',
     },
     excludedTag: '미분류',
 });

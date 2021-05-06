@@ -39,8 +39,8 @@ import { histoEdu } from './edu/histoedu';
 import { korEdu } from './edu/koredu';
 import { learning } from './edu/learning';
 import { mathEd } from './edu/mathed';
-import { physEd } from './edu/physEd';
-import { sports, sportsAffair } from './edu/sports';
+import { physed } from './edu/physed';
+import { sports } from './edu/sports';
 import { che } from './che/che';
 import { childFamily } from './che/childfamily';
 import { clothing } from './che/clothing';
@@ -49,32 +49,32 @@ import { foodNutrition } from './che/foodnutrition';
 import { music } from './music/music';
 
 export const crawlerList: Crawler[] = [
-    // cse,
-    // ee,
-    // cbe,
-    // ere,
-    // me,
-    // ie,
-    // ship,
-    // cee,
-    // architecture,
-    // mse,
-    // // math,
-    // physics,
-    // sees,
-    // // chem,
-    // ir,
-    // snuPharm,
-    // vet,
-    // cls,
-    // social,
-    // biosci,
-    // cals,
-    // aerospace,
-    // econ,
-    // humanities,
-    // nursing,
-    // cba,
+    cse,
+    ee,
+    cbe,
+    ere,
+    me,
+    ie,
+    ship,
+    cee,
+    architecture,
+    mse,
+    // math,
+    physics,
+    sees,
+    // chem,
+    ir,
+    snuPharm,
+    vet,
+    cls,
+    social,
+    biosci,
+    cals,
+    aerospace,
+    econ,
+    humanities,
+    nursing,
+    cba,
     german,
     koreanHistory,
     asianHistory,
@@ -88,9 +88,8 @@ export const crawlerList: Crawler[] = [
     korEdu,
     learning,
     mathEd,
-    physEd,
+    physed,
     sports,
-    sportsAffair,
     che,
     childFamily,
     clothing,

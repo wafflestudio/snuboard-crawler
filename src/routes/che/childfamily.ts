@@ -3,7 +3,7 @@ import { CategoryCrawler } from '../../classes/categoryCrawler';
 
 export const childFamily = new CategoryCrawler({
     departmentName: '아동가족학과',
-    departmentCode: 'che',
+    departmentCode: 'childfamily',
     departmentCollege: CHE,
     baseUrl: 'https://childfamily.snu.ac.kr/board/',
     categoryTags: {

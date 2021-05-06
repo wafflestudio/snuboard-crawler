@@ -3,7 +3,7 @@ import { CategoryCrawler } from '../../classes/categoryCrawler';
 
 export const foodNutrition = new CategoryCrawler({
     departmentName: '식품영양학과',
-    departmentCode: 'che',
+    departmentCode: 'foodnutrition',
     departmentCollege: CHE,
     baseUrl: 'https://foodnutrition.snu.ac.kr/ko/board/',
     categoryTags: {

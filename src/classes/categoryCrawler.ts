@@ -194,6 +194,7 @@ export class CategoryCrawler extends Crawler {
                 isPinned: false,
                 dateString: '',
                 commonUrl: null, // crawl-one can only run after all lists are cleared.
+                tag: crawlerOption.tag,
             };
             await this.addVaryingRequest(
                 requestQueue,
@@ -209,7 +210,7 @@ export class CategoryCrawler extends Crawler {
                     const categoryUrl = this.baseUrl + category;
                     const siteData: SiteData = {
                         department,
-                        isList: crawlerOption?.isList ?? true,
+                        isList: true,
                         isPinned: false,
                         dateString: '',
                         commonUrl: categoryUrl,

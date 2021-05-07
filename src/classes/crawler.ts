@@ -13,6 +13,7 @@ import {
     closeSqliteDB,
     createRequestQueueConnection,
     isBasePushCondition,
+    isEarlyStopCondition,
     listCount,
     listExists,
     urlInQueue,
@@ -81,6 +82,7 @@ export abstract class Crawler {
                     userData: siteData,
                 },
                 siteData.commonUrl,
+                false,
             );
         } else if (await isBasePushCondition(this.requestQueueDB)) {
             this.log.info('Adding baseUrl');
@@ -91,6 +93,7 @@ export abstract class Crawler {
                     userData: siteData,
                 },
                 siteData.commonUrl,
+                false,
             );
         } else {
             this.log.info('Skipping adding baseUrl');
@@ -154,9 +157,13 @@ export abstract class Crawler {
         requestQueue: RequestQueue,
         requestLike: Request | RequestOptions,
         commonUrl: string | null | undefined,
+        checkEarlyStop = true,
     ): Promise<void> {
         if (this.requestQueueDB === undefined) throw Error('requestQueueDB must be initialized');
         if (commonUrl === undefined) throw Error('commonUrl must be either string or null');
+        if (checkEarlyStop && (await isEarlyStopCondition(this.requestQueueDB, commonUrl))) {
+            this.log.info('Early Stopping Crawler');
+        }
         if (await urlInQueue(this.requestQueueDB, requestLike.url)) {
             this.log.info(`Skipping Enqueue list ${requestLike.url} since it is already in queue`);
         } else if ((await listCount(this.requestQueueDB, commonUrl)) > 1) {

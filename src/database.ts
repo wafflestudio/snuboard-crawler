@@ -35,9 +35,13 @@ export async function getSqlite(db: sqlite3.Database, sql: string, params?: any[
     });
 }
 
-export async function isBasePushCondition(db: sqlite3.Database, url?: string): Promise<boolean> {
-    const EARLY_STOP = TRUE_STRING.includes(process.env.EARLY_STOP ?? '');
+const EARLY_STOP = TRUE_STRING.includes(process.env.EARLY_STOP ?? '');
+export async function isEarlyStopCondition(db: sqlite3.Database, url?: string | null): Promise<boolean> {
+    if (url === null) url = undefined;
+    return EARLY_STOP && !(await listExists(db, url));
+}
 
+export async function isBasePushCondition(db: sqlite3.Database, url?: string): Promise<boolean> {
     if (EARLY_STOP) return !(await listExists(db, url));
     return isQueueEmpty(db, url);
 }
@@ -56,14 +60,14 @@ export async function isQueueEmpty(db: sqlite3.Database, url?: string): Promise<
     return result?.id === undefined;
 }
 
-export async function listExists(db: sqlite3.Database, url?: string): Promise<boolean> {
+export async function listExists(db: sqlite3.Database, commonUrl?: string): Promise<boolean> {
     let result;
-    if (url !== undefined) {
+    if (commonUrl !== undefined) {
         result = await getSqlite(
             db,
             `SELECT id FROM request_queues_requests 
              WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":true%' AND json LIKE ? ESCAPE ? LIMIT 1;`,
-            [`%"commonUrl":"${url.replace('%', '\\%').replace('_', '\\_')}"%`, '\\'],
+            [`%"commonUrl":"${commonUrl.replace('%', '\\%').replace('_', '\\_')}"%`, '\\'],
         );
     } else {
         result = await getSqlite(

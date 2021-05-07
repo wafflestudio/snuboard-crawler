@@ -120,6 +120,7 @@ export abstract class Crawler {
             maxRequestRetries: this.maxRetries,
             forceResponseEncoding: this.encoding,
             handlePageFunction: async (context) => {
+                const handleStartTime = Date.now();
                 try {
                     if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);
                     else await handlePage(context);
@@ -144,7 +145,9 @@ export abstract class Crawler {
                     }
                     throw err;
                 } finally {
-                    await Apify.utils.sleep(timeout * 1000);
+                    const handleEndTime = Date.now();
+                    const adjustedTimeout = timeout * 1000 - (handleEndTime - handleStartTime);
+                    if (adjustedTimeout > 0) await Apify.utils.sleep(adjustedTimeout);
                 }
             },
         });
@@ -162,7 +165,8 @@ export abstract class Crawler {
         if (this.requestQueueDB === undefined) throw Error('requestQueueDB must be initialized');
         if (commonUrl === undefined) throw Error('commonUrl must be either string or null');
         if (checkEarlyStop && (await isEarlyStopCondition(this.requestQueueDB, commonUrl))) {
-            this.log.info('Early Stopping Crawler');
+            this.log.info(`Early Stopping Crawler, commonUrl: ${commonUrl}`);
+            return;
         }
         if (await urlInQueue(this.requestQueueDB, requestLike.url)) {
             this.log.info(`Skipping Enqueue list ${requestLike.url} since it is already in queue`);

@@ -88,7 +88,7 @@ class CSECrawler extends Crawler {
             } else {
                 const tags: string[] = [];
 
-                $('div.field-name-field-tag').each(async (index, element) => {
+                $('div.field-name-field-tag').each((index, element) => {
                     const tagString = $(element).text();
 
                     if (tagString.includes('태그:')) {

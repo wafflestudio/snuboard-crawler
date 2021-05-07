@@ -104,8 +104,9 @@ export class CategoryCrawler extends Crawler {
         this.log.info('Page opened.', { url });
         if ($ !== undefined) {
             const urlInstance = new URL(url);
-            const page: number = +(urlInstance.pathname.split('/')[5] ?? 1);
-            // example:  /ko/board/Scholarship/page/2 => ['', 'ko', 'board', 'Scholarship','page','2']
+            const pageString = urlInstance.pathname.match(/[0-9]+\\?/)?.[0];
+            const page: number = +(pageString ?? 1);
+            // example:  url~/page/{page}?pmove~ ->
 
             $('table.lc01 tbody tr').each((index, element) => {
                 const noticeNum = $(element).children('td').first().text().trim();
@@ -133,7 +134,9 @@ export class CategoryCrawler extends Crawler {
                 });
             });
 
-            const nextPath = urlInstance.pathname.split('/').slice(0, 4).join('/');
+            let nextPathArray = urlInstance.pathname.split('/');
+            if (pageString) nextPathArray = nextPathArray.slice(0, -2);
+            const nextPath = nextPathArray.join('/');
 
             const nextList = absoluteLink(`${nextPath}/page/${page + 1}`, request.loadedUrl);
             if (!nextList) return;

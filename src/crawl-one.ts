@@ -5,6 +5,7 @@ import { createDBConnection } from './database.js';
 import { crawlerList } from './routes/routeList';
 import { createOctokit } from './github';
 import { Crawler } from './classes/crawler';
+import { CategoryCrawler } from './classes/categoryCrawler.js';
 
 const {
     utils: { log },
@@ -19,6 +20,7 @@ const args = yargs(process.argv.slice(2))
         timeout: { type: 'number', demandOption: false },
         startUrl: { type: 'string', demandOption: false },
         isList: { type: 'boolean', demandOption: false },
+        tag: { type: 'string', demandOption: false },
     })
     .check((argv) => {
         const departmentCode = argv._[0];
@@ -27,6 +29,9 @@ const args = yargs(process.argv.slice(2))
         }
         if (!crawlers[departmentCode]) {
             throw new Error(`crawl-one: cannot find department '${departmentCode}'`);
+        }
+        if (crawlers[departmentCode] instanceof CategoryCrawler && argv.startUrl && !argv.tag) {
+            throw new Error(`crawl-one: CategoryCrawler requires tag`);
         }
         if (argv.startUrl && argv.isList === undefined) {
             throw new Error(`crawl-one: --isList is required when --startUrl is set`);
@@ -48,12 +53,13 @@ const args = yargs(process.argv.slice(2))
 
 Apify.main(async () => {
     const connection = await createDBConnection();
-    await createOctokit();
+    // await createOctokit();
     log.info('Starting the crawl.');
     await crawlers[args._[0]].startCrawl(connection, {
         timeout: args.timeout,
         startUrl: args.startUrl,
         isList: args.startUrl ? args.isList : undefined,
+        tag: args.tag,
     });
     log.info('Crawl finished.');
     await connection.close();

@@ -34,6 +34,7 @@ export interface CrawlerOption {
     timeout?: number;
     startUrl?: string;
     isList?: boolean;
+    tag?: string;
 }
 
 export interface ChemPageSummary {

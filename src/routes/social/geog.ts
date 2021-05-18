@@ -33,17 +33,15 @@ export class GeogCrawler extends CategoryCrawler {
             notice.department = siteData.department;
             let tags: string[] = [];
 
-            // find category in stat.snu.ac.kr
+            // find category in stat.snu.ac.kr & geog.snu.ac.kr
             const tagTitle = parseTitle($('div.board_view_header strong.tit').text().trim());
-            if (tagTitle.tags.length > 1) {
-                notice.title = tagTitle.tags.slice(1).reduce((prev, tag) => prev + tag) + tagTitle.title;
-            } else {
-                notice.title = tagTitle.title;
-            }
-            if (tagTitle.tags.length > 0) {
-                tags.push(tagTitle.tags[0]);
-            }
-            // notice.title = $('div.board_view_header strong.tit').text().trim();
+            notice.title = tagTitle.title;
+            tagTitle.tags = tagTitle.tags.map((tag) => tag.split('/')).flat();
+            tagTitle.tags.forEach((tag) => {
+                if (tag.length < 6) {
+                    tags.push(tag);
+                }
+            });
 
             const contentElement = $('div.board_view_content');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';

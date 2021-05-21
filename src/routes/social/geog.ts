@@ -31,17 +31,10 @@ export class GeogCrawler extends CategoryCrawler {
 
             const notice = await getOrCreate(Notice, { link: url }, false);
             notice.department = siteData.department;
-            let tags: string[] = [];
 
             // find category in stat.snu.ac.kr & geog.snu.ac.kr
             const tagTitle = parseTitle($('div.board_view_header strong.tit').text().trim());
             notice.title = tagTitle.title;
-            tagTitle.tags = tagTitle.tags.map((tag) => tag.split('/')).flat();
-            tagTitle.tags.forEach((tag) => {
-                if (tag.length < 6) {
-                    tags.push(tag);
-                }
-            });
 
             const contentElement = $('div.board_view_content');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
@@ -71,14 +64,24 @@ export class GeogCrawler extends CategoryCrawler {
                     await getOrCreate(File, file);
                 }),
             );
-            const boardCategory: string = url.split('/')[4];
-            tags.push(this.categoryTags[boardCategory]);
+
+            let tags: string[] = [];
+            tagTitle.tags = tagTitle.tags.flatMap((tag) => tag.split('/')).map((tag) => tag.trim());
+            tagTitle.tags.forEach((tag) => {
+                tags.push(tag);
+            });
 
             // find category in geog.snu.ac.kr
             const category = $('em.cate').text().trim();
             if (category.length > 0) {
                 tags.push(category);
             }
+
+            const boardCategory: string = url.split('/')[4];
+            if (['장학', '취업정보'].includes(this.categoryTags[boardCategory])) {
+                tags = [];
+            }
+            tags.push(this.categoryTags[boardCategory]);
 
             tags = tags.filter((tag) => tag !== this.excludedTag);
             await getOrCreateTags(tags, notice, siteData.department);

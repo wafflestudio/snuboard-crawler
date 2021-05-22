@@ -203,6 +203,7 @@ export class CategoryCrawler extends Crawler {
                     userData: siteData,
                 },
                 siteData.commonUrl,
+                false,
             );
         } else {
             await Promise.all(
@@ -226,6 +227,7 @@ export class CategoryCrawler extends Crawler {
                                 userData: siteData,
                             },
                             siteData.commonUrl,
+                            false,
                         );
                     } else {
                         this.log.info(`Skipping adding baseUrl of category ${category}`);

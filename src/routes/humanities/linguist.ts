@@ -146,5 +146,6 @@ export const linguist = new LinguistCrawler({
     categoryTags: {
         6: '학부',
         4: '대학원',
+        14: '학술행사',
     },
 });

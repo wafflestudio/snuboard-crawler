@@ -48,6 +48,8 @@ import { consumer } from './che/consumer';
 import { foodNutrition } from './che/foodnutrition';
 import { music } from './music/music';
 import { linguist } from './humanities/linguist';
+import { geog } from './social/geog';
+import { stat } from './science/stat';
 
 export const crawlerList: Crawler[] = [
     cse,
@@ -98,5 +100,7 @@ export const crawlerList: Crawler[] = [
     foodNutrition,
     music,
     linguist,
+    geog,
+    stat,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

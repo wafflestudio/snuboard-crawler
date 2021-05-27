@@ -47,6 +47,7 @@ import { clothing } from './che/clothing';
 import { consumer } from './che/consumer';
 import { foodNutrition } from './che/foodnutrition';
 import { music } from './music/music';
+import { linguist } from './humanities/linguist';
 import { geog } from './social/geog';
 import { stat } from './science/stat';
 
@@ -98,6 +99,7 @@ export const crawlerList: Crawler[] = [
     consumer,
     foodNutrition,
     music,
+    linguist,
     geog,
     stat,
 ];

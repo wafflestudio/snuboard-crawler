@@ -182,6 +182,8 @@ export class CategoryCrawler extends Crawler {
             name: this.departmentName,
             college: this.departmentCollege,
         });
+        department.link = this.departmentLink;
+        await Department.save(department);
         this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
         const categories: string[] = Object.keys(this.categoryTags);

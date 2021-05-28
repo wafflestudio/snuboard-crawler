@@ -49,6 +49,7 @@ import { foodNutrition } from './che/foodnutrition';
 import { music } from './music/music';
 import { geog } from './social/geog';
 import { stat } from './science/stat';
+import { medicine } from './medicine/medicine';
 
 export const crawlerList: Crawler[] = [
     cse,
@@ -100,5 +101,6 @@ export const crawlerList: Crawler[] = [
     music,
     geog,
     stat,
+    medicine,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

@@ -4,10 +4,9 @@ import { RequestQueue } from 'apify';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { URL } from 'url';
-import * as Url from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
-import { ChemPageSummary, MedPageSummary, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, removeUrlPageParam, saveNotice } from '../../utils';
+import { MedPageSummary, SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
 import { MEDICINE } from '../../constants';
@@ -16,6 +15,8 @@ export class MedicineCrawler extends Crawler {
     noticeBaseUrl = 'https://medicine.snu.ac.kr/fnt/nac/selectNoticeDetail.do';
 
     nextListBaseUrl = 'https://medicine.snu.ac.kr/fnt/nac/selectNoticeListAjax.do';
+
+    fileDownloadUrl = 'https://medicine.snu.ac.kr/dsc/cmm/dscIndex/downloadFile.do';
 
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
@@ -36,28 +37,32 @@ export class MedicineCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
             notice.department = siteData.department;
 
-            // find category in stat.snu.ac.kr & geog.snu.ac.kr
-            const tagTitle = parseTitle($('div.board_view_header strong.tit').text().trim());
-            notice.title = tagTitle.title;
+            notice.title = $('span.subject span.ellipsis2').text().trim();
 
-            const contentElement = $('div.board_view_content');
+            const contentElement = $(' div.view_contents');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
+            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
             notice.isPinned = siteData.isPinned;
             notice.link = url;
             await saveNotice(notice);
-
             const files: File[] = [];
-            $('div.board_view_attach a').each((index, element) => {
-                // const fileUrlRe = /download_file\('SINGLE', '(.*)\)/;
-                // const fileUrl = $(element).attr('onclick')?.match(fileUrlRe);
+            $('li.attach_file a.file').each((index, element) => {
+                const fileUrlRe = /fnFileDownload\('(.*)'\)/;
+                const fileNum = $(element).attr('onclick')?.match(fileUrlRe)?.[0];
+                if (fileNum === undefined) {
+                    return;
+                }
+                const fileUrl = new URL(this.fileDownloadUrl);
+                fileUrl.searchParams.set('fileKey', '22302');
+                fileUrl.searchParams.set('frstRegisterId', 'dmswnhi');
+                fileUrl.searchParams.set('file_id', fileNum);
                 const file = new File();
                 // eslint-disable-next-line prefer-destructuring
                 file.name = $(element).text().trim();
-                file.link = url;
+                file.link = fileUrl.href;
                 files.push(file);
             });
 
@@ -70,22 +75,15 @@ export class MedicineCrawler extends Crawler {
             );
 
             const tags: string[] = [];
-            tagTitle.tags = tagTitle.tags.flatMap((tag) => tag.split('/')).map((tag) => tag.trim());
-            tagTitle.tags.forEach((tag) => {
-                tags.push(tag);
-            });
-
-            // find category in geog.snu.ac.kr
-            const category = $('em.cate').text().trim();
-            if (category.length > 0) {
-                tags.push(category);
+            if (siteData.tag) {
+                tags.push(siteData.tag);
             }
 
             await getOrCreateTags(tags, notice, siteData.department);
         }
     };
 
-    handleFirst = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue) => {
+    handleFirst = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const siteData = <SiteData>request.userData;
         if ($) {
@@ -97,10 +95,12 @@ export class MedicineCrawler extends Crawler {
                     const titleElement = $(element).find('a');
                     const titleRe = /goToDetail\('(.*)'\)/;
                     const noticeNum = titleElement.attr('onclick')?.match(titleRe)?.[1];
-
+                    const tag = $(element).find('span.cate').text().trim();
                     if (noticeNum === undefined) return;
                     const nextUrl = new URL(this.noticeBaseUrl);
                     nextUrl.searchParams.set('bbsId', 'BBSMSTR_000000000001');
+                    nextUrl.searchParams.set('upper_menu_id', '3000000');
+                    nextUrl.searchParams.set('menu_no', '3010000');
                     nextUrl.searchParams.set('nttId', noticeNum);
                     const dateString = $(element).find('span.date').text().trim();
                     const link = nextUrl.href;
@@ -109,6 +109,7 @@ export class MedicineCrawler extends Crawler {
                         isPinned,
                         isList: false,
                         dateString,
+                        tag,
                     };
                     this.log.info('Enqueueing', { link });
                     requestQueue.addRequest({
@@ -122,6 +123,7 @@ export class MedicineCrawler extends Crawler {
             nextUrl.searchParams.set('recordCountPerPage', '10');
             nextUrl.searchParams.set('more', 'Y');
             const nextList: string = nextUrl.href;
+
             this.log.info('Enqueueing list', { nextList });
             const nextListSiteData: SiteData = {
                 department: siteData.department,
@@ -141,29 +143,33 @@ export class MedicineCrawler extends Crawler {
         }
     };
 
-    handleMore = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue) => {
-        const { request, $, body } = context;
-        const { url } = request;
+    handleMore = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+        const { request, body } = context;
+
         const siteData = <SiteData>request.userData;
         let listData;
         if (typeof body === 'string') {
-            listData = JSON.parse(body).list;
+            listData = JSON.parse(body);
         } else return;
+        listData = listData.list;
         const nextUrl = new URL(this.noticeBaseUrl);
         if (listData !== undefined) {
             listData.forEach((element: MedPageSummary) => {
                 if (Number.isNaN(+element.rn)) return;
                 nextUrl.searchParams.set('bbsId', 'BBSMSTR_000000000001');
+                nextUrl.searchParams.set('upper_menu_id', '3000000');
+                nextUrl.searchParams.set('menu_no', '3010000');
                 nextUrl.searchParams.set('nttId', element.nttId);
                 const link = nextUrl.href;
                 if (link === undefined) return;
-                const dateString = `20${element.frstRegistPnttm}`;
-
+                const dateString = element.frstRegistPnttm;
+                const tag = element.codeNm;
                 const newSiteData: SiteData = {
                     department: siteData.department,
                     isPinned: false,
                     isList: false,
                     dateString,
+                    tag,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -220,6 +226,5 @@ export const medicine = new MedicineCrawler({
     departmentName: '의과대학',
     departmentCode: 'medicine',
     departmentCollege: MEDICINE,
-    // departmentUrl: "https://medicine.snu.ac.kr/",
     baseUrl: 'https://medicine.snu.ac.kr/fnt/nac/selectNoticeList.do?bbsId=BBSMSTR_000000000001',
 });

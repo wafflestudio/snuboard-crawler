@@ -50,6 +50,7 @@ import { music } from './music/music';
 import { linguist } from './humanities/linguist';
 import { geog } from './social/geog';
 import { stat } from './science/stat';
+import { philosophy } from './humanities/philosophy';
 
 export const crawlerList: Crawler[] = [
     cse,
@@ -102,5 +103,6 @@ export const crawlerList: Crawler[] = [
     linguist,
     geog,
     stat,
+    philosophy,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

@@ -42,7 +42,7 @@ export abstract class Crawler {
     public constructor(initData: CrawlerInit) {
         this.departmentName = initData.departmentName;
         this.departmentCode = initData.departmentCode;
-        this.departmentLink = initData.departmentLink ?? `https://${initData.departmentCode}.snu.ac.kr/`;
+        this.departmentLink = initData.departmentLink ?? `${initData.departmentCode}.snu.ac.kr/`;
         this.departmentCollege = initData.departmentCollege;
         this.baseUrl = initData.baseUrl;
         this.startTime = Math.floor(new Date().getTime() / 1000);

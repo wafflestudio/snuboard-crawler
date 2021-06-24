@@ -51,10 +51,15 @@ export class PhilosophyCralwer extends Crawler {
 
             const files: File[] = [];
             $('a.tbl_file').each((index, element) => {
-                const file = new File();
-                file.name = $(element).text().trim();
-                file.link = notice.link;
-                files.push(file);
+                const fileRe = /\.\.\/\.\.\/.+',/;
+                const fileUrl = $(element).attr('href');
+                if (fileUrl) {
+                    const file = new File();
+                    file.name = $(element).text().trim();
+                    file.link =
+                        `http://philosophy.snu.ac.kr/board/${fileUrl.match(fileRe)?.[0].slice(6, -2)}` ?? notice.link;
+                    files.push(file);
+                }
             });
 
             await Promise.all(

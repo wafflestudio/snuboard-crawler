@@ -51,6 +51,7 @@ import { linguist } from './humanities/linguist';
 import { geog } from './social/geog';
 import { stat } from './science/stat';
 import { religion } from './humanities/religion';
+import { philosophy } from './humanities/philosophy';
 
 export const crawlerList: Crawler[] = [
     cse,
@@ -104,5 +105,6 @@ export const crawlerList: Crawler[] = [
     geog,
     stat,
     religion,
+    philosophy,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

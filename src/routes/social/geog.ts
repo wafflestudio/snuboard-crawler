@@ -112,7 +112,7 @@ export class GeogCrawler extends CategoryCrawler {
                     const nextUrl = new URL(request.loadedUrl);
                     if (nextUrl === undefined) return;
                     nextUrl.searchParams.set('board_mode', 'VIEW');
-                    // nextUrl.searchParams.set('var_page', '1');
+                    nextUrl.searchParams.delete('var_page');
                     nextUrl.searchParams.set('search_field', 'ALL');
                     nextUrl.searchParams.set('search_task', 'ALL');
                     nextUrl.searchParams.set('bid', noticeNum);

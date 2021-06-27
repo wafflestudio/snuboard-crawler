@@ -2,7 +2,7 @@ import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
 import { Crawler } from '../../classes/crawler';
-import { SCIENCE } from '../../constants';
+import { INF, SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
@@ -46,7 +46,7 @@ class PhysicsCrawler extends Crawler {
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = request.loadedUrl;
+                    file.link = url;
                     files.push(file);
                 }
             });

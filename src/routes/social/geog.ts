@@ -71,12 +71,13 @@ export class GeogCrawler extends CategoryCrawler {
                 tags.push(tag);
             });
 
-            // find category in geog.snu.ac.kr
+            // find category in geog.snu.ac.kr and communication.snu.ac.kr
             const category = $('em.cate').text().trim();
             if (category.length > 0) {
                 tags.push(category);
             }
 
+            // geog의 장학 게시판, stat의 취업정보 게시
             const boardCategory: string = url.split('/')[4];
             if (['장학', '취업정보'].includes(this.categoryTags[boardCategory])) {
                 tags = [];
@@ -111,7 +112,7 @@ export class GeogCrawler extends CategoryCrawler {
                     const nextUrl = new URL(request.loadedUrl);
                     if (nextUrl === undefined) return;
                     nextUrl.searchParams.set('board_mode', 'VIEW');
-                    // nextUrl.searchParams.set('var_page', '1');
+                    nextUrl.searchParams.delete('var_page');
                     nextUrl.searchParams.set('search_field', 'ALL');
                     nextUrl.searchParams.set('search_task', 'ALL');
                     nextUrl.searchParams.set('bid', noticeNum);

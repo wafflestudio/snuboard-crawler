@@ -3,16 +3,16 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { CategoryCrawlerInit, CategoryTag, ChemPageSummary, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, removeUrlPageParam, saveNotice } from '../../utils';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
-import { ENGINEERING, SCIENCE } from '../../constants';
+import { INF, SCIENCE } from '../../constants';
 
 class ChemCrawler extends CategoryCrawler {
-    protected readonly encoding: string = 'EUC-KR';
+    //    protected readonly encoding: string = 'EUC-KR';
 
-    protected readonly maxRetries: number = 5;
+    //    protected readonly maxRetries: number = 5;
 
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
@@ -24,24 +24,24 @@ class ChemCrawler extends CategoryCrawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-            $('img').each((index, element) => {
-                const imgSrc = $(element).attr('src');
-                $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
-            });
+
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const title = $('div.view_title strong').text();
+            let title = $('h1.bbstitle').text().trim();
+            if (siteData.tag) {
+                title = title.substr(title.indexOf(']') + 1).trim();
+            }
             notice.title = title;
-            const bodyElement = $('div.view_body');
-            bodyElement.find('div.view_bottom').remove();
-            const contentElement = bodyElement.find('p').first();
+            const contentElement = $('div.fixwidth.bbs_contents');
 
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            let content = contentElement.html() ?? '';
+            content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
+            // example: '2021-02-26 11:34:01'
+            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
 
             notice.isPinned = siteData.isPinned;
             notice.link = url;
@@ -49,16 +49,16 @@ class ChemCrawler extends CategoryCrawler {
             await saveNotice(notice);
 
             const files: File[] = [];
-            bodyElement.find('p').first().remove();
-            bodyElement.find('a').each((index, element) => {
+            $('ul.board-filelist div a').each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = fileUrl;
+                    file.link = url;
                     files.push(file);
                 }
             });
+
             await Promise.all(
                 // using Promise.all in order to ensure full execution
                 files.map(async (file) => {
@@ -67,12 +67,13 @@ class ChemCrawler extends CategoryCrawler {
                 }),
             );
 
-            const code: string = new URL(url).searchParams.get('code') ?? '';
-            const codeTags: CategoryTag = {
-                '001001': '공지사항',
-                '001004': '취업',
-            };
-            const tags = [codeTags[code] ?? '미분류'];
+            const tags: string[] = [];
+            if (siteData.tag) {
+                tags.push(siteData.tag);
+            }
+            const cate = url.split('/')[4].split('?')[0];
+            tags.push(this.categoryTags[cate]);
+
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
@@ -80,31 +81,26 @@ class ChemCrawler extends CategoryCrawler {
     };
 
     handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
-        const { request, body } = context;
+        const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        let listData;
         const urlInstance = new URL(request.loadedUrl);
-        const nextPageUrlInstance = new URL(urlInstance.href.replace('data', 'view'));
+        const page = +(urlInstance.searchParams.get('page') ?? 1);
 
-        if (typeof body === 'string') {
-            listData = JSON.parse(body);
-        } else return;
-
-        if (listData !== undefined) {
-            listData.forEach((element: ChemPageSummary) => {
-                if (Number.isNaN(+element.seqno)) return;
-                nextPageUrlInstance.searchParams.set('seqno', element.seqno);
-                const link = removeUrlPageParam(nextPageUrlInstance.href);
+        if ($ !== undefined) {
+            $('table.fixwidth.table-rows tbody tr').each((index, element) => {
+                const titleElement = $(element).find('td.title a');
+                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
-                const dateString = `20${element.wdate}`;
-
+                const tag: string = $(element).find('td.text-center:nth-child(2)').text();
+                const dateString: string = $(element).find('td.text-center.hidden-xs-down').last().text();
                 const newSiteData: SiteData = {
                     department: siteData.department,
                     isPinned: false,
                     isList: false,
                     dateString,
+                    tag,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -113,13 +109,20 @@ class ChemCrawler extends CategoryCrawler {
                 });
             });
 
-            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
+            let lastNoticeId = +$('table.fixwidth.table-rows tbody tr')
+                .last()
+                .find('td.text-center')
+                .first()
+                .text()
+                .trim();
+            if (Number.isNaN(lastNoticeId)) {
+                lastNoticeId = INF;
+            }
 
-            if (listData.length === 5) {
-                const nextListUrlInstance = new URL(urlInstance.href);
-                nextListUrlInstance.searchParams.set('page', (page + 1).toString());
-
-                const nextList: string = nextListUrlInstance.href;
+            if (lastNoticeId > 1) {
+                const nextUrlInstance = new URL(urlInstance.href);
+                nextUrlInstance.searchParams.set('page', (page + 1).toString());
+                const nextList = nextUrlInstance.href;
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -138,7 +141,7 @@ class ChemCrawler extends CategoryCrawler {
                 );
             }
         } else {
-            throw new TypeError('listData is undefined');
+            throw new TypeError('Selector is undefined');
         }
     };
 }
@@ -146,10 +149,10 @@ class ChemCrawler extends CategoryCrawler {
 export const chem = new ChemCrawler({
     departmentName: '화학부',
     departmentCode: 'chem',
-    baseUrl: 'https://chem.snu.ac.kr/kor/newsnevent/',
+    baseUrl: 'https://chem.snu.ac.kr/community/',
     departmentCollege: SCIENCE,
     categoryTags: {
-        'news_data.asp?code=001001': '공지사항',
-        'jobs_data.asp?code=001004': '취업',
+        notice: '공지사항',
+        recruit: '취업',
     },
 });

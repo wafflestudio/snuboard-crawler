@@ -2,7 +2,7 @@ import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
 import { Crawler } from '../../classes/crawler';
-import { SCIENCE } from '../../constants';
+import { INF, SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
@@ -20,7 +20,10 @@ class PhysicsCrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
+            $('img').each((index, element) => {
+                const imgSrc = $(element).attr('src');
+                $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
+            });
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
@@ -46,7 +49,7 @@ class PhysicsCrawler extends Crawler {
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = request.loadedUrl;
+                    file.link = url;
                     files.push(file);
                 }
             });
@@ -72,7 +75,6 @@ class PhysicsCrawler extends Crawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-        let minNoticeId = 1000;
         const urlInstance = new URL(request.loadedUrl);
         const page = +(urlInstance.searchParams.get('page') ?? 1);
 
@@ -97,13 +99,17 @@ class PhysicsCrawler extends Crawler {
                     userData: newSiteData,
                 });
             });
+            let lastNoticeId = +$('table.fixwidth.table-rows tbody tr')
+                .last()
+                .find('td.text-center')
+                .first()
+                .text()
+                .trim();
+            if (Number.isNaN(lastNoticeId)) {
+                lastNoticeId = INF;
+            }
 
-            minNoticeId = Math.min(
-                minNoticeId,
-                +($('table.fixwidth.table-rows tbody tr').last().find('td.text-center').first().text() ?? -1),
-            );
-
-            if (minNoticeId > 1) {
+            if (lastNoticeId > 1) {
                 const nextUrlInstance = new URL(urlInstance.href);
                 nextUrlInstance.searchParams.set('page', (page + 1).toString());
                 const nextList = nextUrlInstance.href;

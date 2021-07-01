@@ -50,6 +50,7 @@ import { music } from './music/music';
 import { linguist } from './humanities/linguist';
 import { geog } from './social/geog';
 import { stat } from './science/stat';
+import { religion } from './humanities/religion';
 import { philosophy } from './humanities/philosophy';
 import { communication } from './social/communication';
 import { archaeologyArthistory } from './humanities/archaeology-arthistory';
@@ -108,6 +109,7 @@ export const crawlerList: Crawler[] = [
     linguist,
     geog,
     stat,
+    religion,
     philosophy,
     communication,
     archaeologyArthistory,

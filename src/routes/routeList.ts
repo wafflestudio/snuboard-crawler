@@ -57,6 +57,7 @@ import { archaeologyArthistory } from './humanities/archaeology-arthistory';
 import { socialEdu } from './edu/socialedu';
 import { ethics } from './edu/ethics';
 import { engEdu } from './edu/engedu';
+import { art } from './art/art';
 
 export const crawlerList: Crawler[] = [
     cse,
@@ -116,5 +117,6 @@ export const crawlerList: Crawler[] = [
     socialEdu,
     ethics,
     engEdu,
+    art,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

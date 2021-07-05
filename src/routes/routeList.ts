@@ -50,12 +50,14 @@ import { music } from './music/music';
 import { linguist } from './humanities/linguist';
 import { geog } from './social/geog';
 import { stat } from './science/stat';
+import { religion } from './humanities/religion';
 import { philosophy } from './humanities/philosophy';
 import { communication } from './social/communication';
 import { archaeologyArthistory } from './humanities/archaeology-arthistory';
 import { socialEdu } from './edu/socialedu';
 import { ethics } from './edu/ethics';
 import { engEdu } from './edu/engedu';
+import { art } from './art/art';
 
 export const crawlerList: Crawler[] = [
     cse,
@@ -108,11 +110,13 @@ export const crawlerList: Crawler[] = [
     linguist,
     geog,
     stat,
+    religion,
     philosophy,
     communication,
     archaeologyArthistory,
     socialEdu,
     ethics,
     engEdu,
+    art,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

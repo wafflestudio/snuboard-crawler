@@ -83,7 +83,7 @@ export const crawlerList: Crawler[] = [
     // cals,
     // aerospace,
     // econ,
-    // humanities, need to be re-crawl due to handleList error
+    humanities,
     // nursing,
     // cba, need to be re-crawl due to format change
     // german,

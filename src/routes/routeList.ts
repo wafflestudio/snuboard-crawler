@@ -73,7 +73,7 @@ export const crawlerList: Crawler[] = [
     // mse, need to be re-crawl due to format change
     math,
     // physics,
-    // sees, need to be re-crawl due to format change
+    sees,
     chem,
     // ir,
     // snuPharm,
@@ -86,7 +86,7 @@ export const crawlerList: Crawler[] = [
     // econ,
     // humanities, need to be re-crawl due to handleList error
     // nursing,
-    // cba, need to be re-crawl due to format change
+    cba,
     // german,
     // koreanHistory,
     // asianHistory,

@@ -39,7 +39,7 @@ class AsiaCrawler extends CategoryCrawler {
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
             const dateString = $('section#bo_v_info strong:nth-child(4)').text();
-            notice.createdAt = strptime(`20${dateString}`, '%Y-%m-%d %H:%m');
+            notice.createdAt = strptime(`20${dateString}`, '%Y-%m-%d %H:%M');
             notice.isPinned = siteData.isPinned;
             notice.link = url;
 

@@ -37,7 +37,7 @@ class ArtCrawler extends CategoryCrawler {
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            const fullDateString: string = siteData.dateString.replaceAll(' ', '');
+            const fullDateString: string = siteData.dateString.replaceAll(/\s/g, '');
             // example: '2021/02/26'
             notice.createdAt = strptime(fullDateString, '%Y/%m/%d');
 

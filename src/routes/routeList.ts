@@ -59,6 +59,7 @@ import { ethics } from './edu/ethics';
 import { engEdu } from './edu/engedu';
 import { art } from './art/art';
 import { asia } from './humanities/asia';
+import { english } from './humanities/english';
 
 export const crawlerList: Crawler[] = [
     // cse,
@@ -120,5 +121,6 @@ export const crawlerList: Crawler[] = [
     engEdu,
     art,
     asia,
+    english,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

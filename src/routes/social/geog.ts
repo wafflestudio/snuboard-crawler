@@ -17,6 +17,7 @@ export class GeogCrawler extends CategoryCrawler {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
+        const boardCategory: string = url.split('/')[4];
 
         this.log.info('Page opened.', { url });
 
@@ -33,8 +34,13 @@ export class GeogCrawler extends CategoryCrawler {
             notice.department = siteData.department;
 
             // find category in stat.snu.ac.kr & geog.snu.ac.kr
-            const tagTitle = parseTitle($('div.board_view_header strong.tit').text().trim());
-            notice.title = tagTitle.title;
+            const tagTitleString = $('div.board_view_header strong.tit').text().trim();
+            const tagTitle = parseTitle(tagTitleString);
+            if (this.departmentCode === 'stat' && this.categoryTags[boardCategory] !== '취업정보') {
+                notice.title = tagTitle.title;
+            } else {
+                notice.title = tagTitleString;
+            }
 
             const contentElement = $('div.board_view_content');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
@@ -66,10 +72,12 @@ export class GeogCrawler extends CategoryCrawler {
             );
 
             let tags: string[] = [];
-            tagTitle.tags = tagTitle.tags.flatMap((tag) => tag.split('/')).map((tag) => tag.trim());
-            tagTitle.tags.forEach((tag) => {
-                tags.push(tag);
-            });
+            if (this.departmentCode === 'stat') {
+                tagTitle.tags = tagTitle.tags.flatMap((tag) => tag.split('/')).map((tag) => tag.trim());
+                tagTitle.tags.forEach((tag) => {
+                    tags.push(tag);
+                });
+            }
 
             // find category in geog.snu.ac.kr and communication.snu.ac.kr
             const category = $('em.cate').text().trim();
@@ -78,7 +86,6 @@ export class GeogCrawler extends CategoryCrawler {
             }
 
             // geog의 장학 게시판, stat의 취업정보 게시
-            const boardCategory: string = url.split('/')[4];
             if (['장학', '취업정보'].includes(this.categoryTags[boardCategory])) {
                 tags = [];
             }

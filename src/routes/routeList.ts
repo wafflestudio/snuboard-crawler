@@ -95,7 +95,7 @@ export const crawlerList: Crawler[] = [
     // meeHak,
     // chemEdu,
     // earthEdu,
-    // snufrance,
+    // french,
     // geoEdu,
     // histoEdu,
     // korEdu,

@@ -34,13 +34,7 @@ export class GeogCrawler extends CategoryCrawler {
             notice.department = siteData.department;
 
             // find category in stat.snu.ac.kr & geog.snu.ac.kr
-            const tagTitleString = $('div.board_view_header strong.tit').text().trim();
-            const tagTitle = parseTitle(tagTitleString);
-            if (this.departmentCode === 'stat' && this.categoryTags[boardCategory] !== '취업정보') {
-                notice.title = tagTitle.title;
-            } else {
-                notice.title = tagTitleString;
-            }
+            notice.title = $('div.board_view_header strong.tit').text().trim();
 
             const contentElement = $('div.board_view_content');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
@@ -72,12 +66,6 @@ export class GeogCrawler extends CategoryCrawler {
             );
 
             let tags: string[] = [];
-            if (this.departmentCode === 'stat') {
-                tagTitle.tags = tagTitle.tags.flatMap((tag) => tag.split('/')).map((tag) => tag.trim());
-                tagTitle.tags.forEach((tag) => {
-                    tags.push(tag);
-                });
-            }
 
             // find category in geog.snu.ac.kr and communication.snu.ac.kr
             const category = $('em.cate').text().trim();

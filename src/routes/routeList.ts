@@ -60,6 +60,9 @@ import { engEdu } from './edu/engedu';
 import { art } from './art/art';
 import { asia } from './humanities/asia';
 import { snuCll } from './humanities/snucll';
+import { snuFrance } from './humanities/snufrance';
+import { english } from './humanities/english';
+import { russian } from './humanities/russian';
 
 export const crawlerList: Crawler[] = [
     // cse,
@@ -74,7 +77,7 @@ export const crawlerList: Crawler[] = [
     // mse, need to be re-crawl due to format change
     math,
     // physics,
-    // sees, need to be re-crawl due to format change
+    sees,
     chem,
     // ir,
     // snuPharm,
@@ -85,9 +88,9 @@ export const crawlerList: Crawler[] = [
     // cals,
     // aerospace,
     // econ,
-    // humanities, need to be re-crawl due to handleList error
+    humanities,
     // nursing,
-    // cba, need to be re-crawl due to format change
+    cba,
     // german,
     // koreanHistory,
     // asianHistory,
@@ -122,5 +125,8 @@ export const crawlerList: Crawler[] = [
     art,
     asia,
     snuCll,
+    snuFrance,
+    english,
+    russian,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

@@ -9,6 +9,10 @@ import { strptime } from '../../micro-strptime';
 import { RequestQueue } from 'apify';
 
 class SnucllCrawler extends CategoryCrawler {
+    private categories = ['공지사항', '장학정보', '취업정보', '중문과 소식', '채용정보'];
+
+    private tags = ['학생', '수업', '졸업', '학술', '행사', '기타', '교내', '교외', '취업', '부직'];
+
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -77,10 +81,13 @@ class SnucllCrawler extends CategoryCrawler {
                 }),
             );
 
-            const tags: string[] = siteData.tag === undefined ? [] : [siteData.tag];
-            const categories = ['공지사항', '장학정보', '취업정보', '중문과 소식', '채용정보'];
+            const tags = [];
+            if (siteData.tag !== undefined && this.tags.includes(siteData.tag)) {
+                tags.push(siteData.tag);
+            }
+
             if (boardId === null) return;
-            tags.push(categories[+boardId - 1]);
+            tags.push(this.categories[+boardId - 1]);
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');

@@ -127,9 +127,9 @@ export class GeogCrawler extends CategoryCrawler {
                 });
 
             const nextPage = +(
-                new URL(absoluteLink($('div.paging a.next').attr('href'), request.loadedUrl) ?? '').searchParams.get(
-                    'var_page',
-                ) ?? 1
+                new URL(
+                    absoluteLink($('div.paging a.next').attr('href'), request.loadedUrl) ?? this.baseUrl,
+                ).searchParams.get('var_page') ?? 1
             );
 
             if (page !== nextPage) {

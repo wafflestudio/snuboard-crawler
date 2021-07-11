@@ -59,6 +59,7 @@ import { ethics } from './edu/ethics';
 import { engEdu } from './edu/engedu';
 import { art } from './art/art';
 import { asia } from './humanities/asia';
+import { snuFrance } from './humanities/snufrance';
 import { english } from './humanities/english';
 import { russian } from './humanities/russian';
 
@@ -122,6 +123,7 @@ export const crawlerList: Crawler[] = [
     engEdu,
     art,
     asia,
+    snuFrance,
     english,
     russian,
 ];

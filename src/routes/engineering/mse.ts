@@ -6,7 +6,7 @@ import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
 import { URL } from 'url';
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
-import { SiteData } from '../../types/custom-types';
+import { CategoryTag, SiteData } from '../../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
@@ -24,18 +24,24 @@ class MSECrawler extends CategoryCrawler {
             // dept -> notice -> file
             //                -> tag -> notice_tag
 
+            $('img').each((index, element) => {
+                const imgSrc = $(element).attr('src');
+                if (imgSrc && !imgSrc.startsWith('data')) {
+                    $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
+                }
+            });
+
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const title = $('td[id="fn"]').text();
+            const title = $('div.g_head div.title').text().trim();
             notice.title = title;
-            const contentElement = $('td[class="s_default_view_body_2"]').find('td');
-            contentElement.find('div[class="mnSns"]').remove();
+            const contentElement = $('div.g_body');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            notice.createdAt = strptime(siteData.dateString, '%Y-%m-%d');
+            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
 
             notice.isPinned = siteData.isPinned;
             notice.link = url;
@@ -43,12 +49,12 @@ class MSECrawler extends CategoryCrawler {
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('#boardSkin_s_default_view > tbody > tr:nth-child(1) > td a').each((index, element) => {
+            $('ul.file_list li a').each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? '';
+                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? notice.link;
                     files.push(file);
                 }
             });
@@ -60,13 +66,18 @@ class MSECrawler extends CategoryCrawler {
                 }),
             );
 
-            const category = new URL(url).searchParams.get('category') ?? '64';
+            const category = $('div.cate').text().trim();
             const tags: string[] = [];
+            const translateWords: CategoryTag = {
+                Undergraduate: '학부',
+                Graduate: '대학원',
+                취업: '취업',
+            };
             if (siteData.tag) {
-                tags.push(siteData.tag);
+                tags.push(this.categoryTags[siteData.tag]);
             }
-            if (!tags.includes(this.categoryTags[category])) {
-                tags.push(this.categoryTags[category]);
+            if (category && category !== '') {
+                tags.push(translateWords[category]);
             }
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
@@ -81,26 +92,21 @@ class MSECrawler extends CategoryCrawler {
         this.log.info('Page opened.', { url });
 
         if ($ !== undefined) {
-            $('tbody tr').each((index, element) => {
-                const titleElement = $(element).find('td:nth-child(2) a');
-                const noticeIdxRe = /viewData\('([0-9]+)'\)/;
-                const noticeIdx = titleElement.attr('onclick')?.match(noticeIdxRe);
-                if (!noticeIdx) return;
-                const pageUrl = new URL(url);
-                pageUrl.searchParams.set('mode', 'view');
-                pageUrl.searchParams.set('board_num', noticeIdx[1]);
-                pageUrl.searchParams.delete('page');
-                const link = pageUrl.href;
+            $('ul.list_wrap li').each((index, element) => {
+                const titleElement = $(element).find('a');
+                const link = absoluteLink(titleElement.attr('href'), this.baseUrl);
 
-                const tag = $(element).find('td:nth-child(1)').text();
                 if (link === undefined) return;
-                const dateString = $(element).children('td').slice(3, 4).text().trim();
+                const dateString = $(element)
+                    .html()
+                    ?.match(/[0-9]{4}.[0-9]{2}.[0-9]{2}/g)?.[0];
+                if (!dateString) return;
                 const newSiteData: SiteData = {
                     department: siteData.department,
                     isPinned: false,
                     isList: false,
                     dateString,
-                    tag,
+                    tag: siteData.tag,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({
@@ -109,18 +115,15 @@ class MSECrawler extends CategoryCrawler {
                 });
             });
 
-            const endElement = $('tfoot tr td a').last().attr('href');
-            const endUrl = absoluteLink(endElement, request.loadedUrl);
-            if (!endUrl) return;
-            const endUrlInstance = new URL(endUrl);
+            const hasNext = $('a.last').attr('href') !== undefined;
             const urlInstance = new URL(url);
-            const page: number = +(urlInstance.searchParams.get('page') ?? 1);
-            const endPage = endUrlInstance.searchParams.get('page');
+            const page: number = +(urlInstance.searchParams.get('pg') ?? 1);
 
-            if (endPage && page < +endPage) {
-                urlInstance.searchParams.set('page', (page + 1).toString());
+            if (hasNext) {
+                const nextListUrlInstance = new URL(url);
+                nextListUrlInstance.searchParams.set('pg', `${page + 1}`);
 
-                const nextList: string = urlInstance.href;
+                const nextList: string = nextListUrlInstance.href;
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -128,6 +131,7 @@ class MSECrawler extends CategoryCrawler {
                     isList: true,
                     dateString: '',
                     commonUrl: siteData.commonUrl,
+                    tag: siteData.tag,
                 };
                 await this.addVaryingRequest(
                     requestQueue,
@@ -147,11 +151,10 @@ class MSECrawler extends CategoryCrawler {
 export const mse = new MSECrawler({
     departmentName: '재료공학부',
     departmentCode: 'mse',
-    baseUrl: 'https://mse.snu.ac.kr/sub.php?code=notice&category=',
+    baseUrl: 'https://mse.snu.ac.kr/board/board.php?pg=1&bo_table=',
     departmentCollege: ENGINEERING,
     categoryTags: {
-        1: '학부',
-        2: '대학원',
-        64: '전체',
+        notice: '공지사항',
+        seminar: '세미나',
     },
 });

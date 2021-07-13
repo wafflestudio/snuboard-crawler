@@ -94,9 +94,12 @@ class MSECrawler extends CategoryCrawler {
         if ($ !== undefined) {
             $('ul.list_wrap li').each((index, element) => {
                 const titleElement = $(element).find('a');
-                const link = absoluteLink(titleElement.attr('href'), this.baseUrl);
+                let link = absoluteLink(titleElement.attr('href'), this.baseUrl);
 
                 if (link === undefined) return;
+                const nextLinkUrlInstance = new URL(link);
+                nextLinkUrlInstance.searchParams.delete('pg');
+                link = nextLinkUrlInstance.href;
                 const dateString = $(element)
                     .html()
                     ?.match(/[0-9]{4}.[0-9]{2}.[0-9]{2}/g)?.[0];

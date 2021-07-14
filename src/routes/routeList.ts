@@ -63,6 +63,7 @@ import { snuCll } from './humanities/snucll';
 import { snuFrance } from './humanities/snufrance';
 import { english } from './humanities/english';
 import { russian } from './humanities/russian';
+import { spanish } from './humanities/spanish';
 
 export const crawlerList: Crawler[] = [
     // cse,
@@ -128,5 +129,6 @@ export const crawlerList: Crawler[] = [
     snuFrance,
     english,
     russian,
+    spanish,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

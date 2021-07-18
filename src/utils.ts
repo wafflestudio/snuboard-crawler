@@ -17,9 +17,18 @@ export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPa
     return element;
 }
 
-export async function getOrCreateTags(tags: string[], notice: Notice, department: Department): Promise<void> {
+export async function getOrCreateTags(
+    tags: string[],
+    notice: Notice,
+    department: Department,
+    excludedTags?: string[],
+): Promise<void> {
     // tags: list of tag names
     // creates Tag and NoticeTag elements.
+    tags = tags.filter((tag) => tag.length > 0);
+    if (excludedTags !== undefined) {
+        tags = tags.filter((tag) => !excludedTags.includes(tag));
+    }
     await Promise.all(
         tags.map(async (tagName) => {
             const tag = await getOrCreate(Tag, { department, name: tagName });

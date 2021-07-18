@@ -10,4 +10,5 @@ export const stat = new GeogCrawler({
         'board-18-gn-969abdbt-20210204013659': '공지사항',
         'board-18-GN-4n79A6rb-20210204014612': '취업정보',
     },
+    excludedTags: ['3', '6'],
 });

@@ -48,16 +48,18 @@ export class MedicineCrawler extends Crawler {
             notice.isPinned = siteData.isPinned;
             notice.link = url;
             await saveNotice(notice);
+            const fileKey = $('#fileKey').attr('value') ?? '';
+            const registerId = $('#frstRegisterId').attr('value') ?? '';
             const files: File[] = [];
             $('li.attach_file a.file').each((index, element) => {
                 const fileUrlRe = /fnFileDownload\('(.*)'\)/;
-                const fileNum = $(element).attr('onclick')?.match(fileUrlRe)?.[0];
+                const fileNum = $(element).attr('onclick')?.match(fileUrlRe)?.[1];
                 if (fileNum === undefined) {
                     return;
                 }
                 const fileUrl = new URL(this.fileDownloadUrl);
-                fileUrl.searchParams.set('fileKey', '22302');
-                fileUrl.searchParams.set('frstRegisterId', 'dmswnhi');
+                fileUrl.searchParams.set('fileKey', fileKey);
+                fileUrl.searchParams.set('frstRegisterId', registerId);
                 fileUrl.searchParams.set('file_id', fileNum);
                 const file = new File();
                 // eslint-disable-next-line prefer-destructuring
@@ -145,11 +147,12 @@ export class MedicineCrawler extends Crawler {
 
     handleMore = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
         const { request, body } = context;
-
+        const { url } = request;
         const siteData = <SiteData>request.userData;
         let listData;
         if (typeof body === 'string') {
-            listData = JSON.parse(body);
+            const withoutNttCn = body.replace(/"nttCn":"(.*?),(?="nttId")/g, '');
+            listData = JSON.parse(withoutNttCn);
         } else return;
         listData = listData.list;
         const nextUrl = new URL(this.noticeBaseUrl);
@@ -178,14 +181,14 @@ export class MedicineCrawler extends Crawler {
                 });
             });
 
-            const page: number = listData[0].pageIndex;
+            const page: number = +(new URL(url).searchParams.get('pageIndex') ?? '1');
 
             if (listData.length > 0) {
                 const nextListUrlInstance = new URL(this.nextListBaseUrl);
                 nextListUrlInstance.searchParams.set('pageIndex', (page + 1).toString());
-                nextUrl.searchParams.set('bbsId', 'BBSMSTR_000000000001');
-                nextUrl.searchParams.set('recordCountPerPage', '10');
-                nextUrl.searchParams.set('more', 'Y');
+                nextListUrlInstance.searchParams.set('bbsId', 'BBSMSTR_000000000001');
+                nextListUrlInstance.searchParams.set('recordCountPerPage', '10');
+                nextListUrlInstance.searchParams.set('more', 'Y');
 
                 const nextList: string = nextListUrlInstance.href;
                 this.log.info('Enqueueing list', { nextList });

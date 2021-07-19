@@ -1,63 +1,68 @@
-// filename must equal to first level of url domain.
-// e.g. mse.snu.ac.kr -> mse.ts
-
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
-import { Notice, File } from '../../../server/src/notice/notice.entity.js';
+import { RequestQueue } from 'apify';
+import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { HUMANITIES } from '../../constants';
 import { CategoryTag, SiteData } from '../../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
-import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { ENGINEERING } from '../../constants';
 
-class MSECrawler extends CategoryCrawler {
+class ReligionCrawler extends CategoryCrawler {
+    categoryId: CategoryTag = {
+        '1995': 'notice',
+        '1997': 'news_event',
+        '1999': 'news_research',
+    };
+
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
+
         if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
             $('img').each((index, element) => {
                 const imgSrc = $(element).attr('src');
                 if (imgSrc && !imgSrc.startsWith('data')) {
                     $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
                 }
             });
-
             const notice = await getOrCreate(Notice, { link: url }, false);
 
+            if (siteData.tag === undefined) return;
+            const idCss = this.categoryId[siteData.tag];
+
             notice.department = siteData.department;
-            const title = $('div.g_head div.title').text().trim();
-            notice.title = title;
-            const contentElement = $('div.g_body');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            notice.title = $(`tr#mb_${idCss}_tr_title td span:nth-child(1)`).text().trim();
+            const contentElement = $(`tr#mb_${idCss}_tr_content td`);
+            let content = contentElement.html() ?? '';
+            content = load(content, { decodeEntities: false })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
+            const fullDateString: string = $(`tr#mb_${idCss}_tr_title td span:nth-child(2)`).text().trim();
+            // example: '2021-02-26 11:34'
+            notice.createdAt = strptime(fullDateString, '%Y-%m-%d %H:%M');
 
             notice.isPinned = siteData.isPinned;
+
             notice.link = url;
 
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('ul.file_list li a').each((index, element) => {
-                const fileUrl = $(element).attr('href');
-                if (fileUrl) {
-                    const file = new File();
-                    file.name = $(element).text().trim();
-                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? notice.link;
-                    files.push(file);
-                }
+            $(`tr#mb_${idCss}_tr_file_download td a`).each((index, element) => {
+                const file = new File();
+                file.name = $(element).text().trim();
+                file.link = notice.link;
+                files.push(file);
             });
+
             await Promise.all(
                 // using Promise.all in order to ensure full execution
                 files.map(async (file) => {
@@ -66,19 +71,12 @@ class MSECrawler extends CategoryCrawler {
                 }),
             );
 
-            const category = $('div.cate').text().trim();
-            const tags: string[] = [];
-            const translateWords: CategoryTag = {
-                Undergraduate: '학부',
-                Graduate: '대학원',
-                취업: '취업',
-            };
-            if (siteData.tag) {
-                tags.push(this.categoryTags[siteData.tag]);
+            let tags: string[] = [];
+            const category = siteData.tag;
+            if (category && this.categoryTags[category] && !tags.includes(this.categoryTags[category])) {
+                tags.push(this.categoryTags[category]);
             }
-            if (category && category !== '') {
-                tags.push(translateWords[category]);
-            }
+            tags = tags.filter((tag) => tag !== this.excludedTag);
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
@@ -90,43 +88,44 @@ class MSECrawler extends CategoryCrawler {
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
-
         if ($ !== undefined) {
-            $('ul.list_wrap li').each((index, element) => {
-                const titleElement = $(element).find('a');
-                let link = absoluteLink(titleElement.attr('href'), this.baseUrl);
+            const urlInstance = new URL(url);
+            const page: number = +(urlInstance.searchParams.get('board_page') ?? 1);
+
+            $('div.main-style1 table tbody tr').each((index, element) => {
+                const isPinned = $(element).hasClass('mb-notice');
+
+                const titleElement = $(element).find('td:nth-child(2) a');
+                // const title = titleElement.text();
+
+                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
 
                 if (link === undefined) return;
                 const nextLinkUrlInstance = new URL(link);
-                nextLinkUrlInstance.searchParams.delete('pg');
-                link = nextLinkUrlInstance.href;
-                const dateString = $(element)
-                    .html()
-                    ?.match(/[0-9]{4}.[0-9]{2}.[0-9]{2}/g)?.[0];
-                if (!dateString) return;
+                nextLinkUrlInstance.searchParams.delete('board_page');
+                const nextLink = nextLinkUrlInstance.href;
+
+                const dateString = $($(element).children('td')[3]).text().trim();
+
                 const newSiteData: SiteData = {
                     department: siteData.department,
-                    isPinned: false,
+                    isPinned,
                     isList: false,
                     dateString,
                     tag: siteData.tag,
                 };
-                this.log.info('Enqueueing', { link });
+                this.log.info('Enqueueing', { nextLink });
                 requestQueue.addRequest({
-                    url: link,
+                    url: nextLink,
                     userData: newSiteData,
                 });
             });
 
-            const hasNext = $('a.last').attr('href') !== undefined;
-            const urlInstance = new URL(url);
-            const page: number = +(urlInstance.searchParams.get('pg') ?? 1);
-
+            const nextListUrlInstance = new URL(url);
+            nextListUrlInstance.searchParams.set('board_page', `${page + 1}`);
+            const nextList = nextListUrlInstance.href;
+            const hasNext = $('a.btn-end').attr('href') !== undefined;
             if (hasNext) {
-                const nextListUrlInstance = new URL(url);
-                nextListUrlInstance.searchParams.set('pg', `${page + 1}`);
-
-                const nextList: string = nextListUrlInstance.href;
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -151,13 +150,15 @@ class MSECrawler extends CategoryCrawler {
     };
 }
 
-export const mse = new MSECrawler({
-    departmentName: '재료공학부',
-    departmentCode: 'mse',
-    baseUrl: 'https://mse.snu.ac.kr/board/board.php?pg=1&bo_table=',
-    departmentCollege: ENGINEERING,
+export const religion = new ReligionCrawler({
+    departmentName: '종교학과',
+    departmentCode: 'religion',
+    departmentCollege: HUMANITIES,
+    baseUrl: 'http://religion.snu.ac.kr/?mode=list&board_page=1&page_id=',
     categoryTags: {
-        notice: '공지사항',
-        seminar: '세미나',
+        '1995': '공지사항',
+        '1997': '학과소식',
+        '1999': '학술행사',
     },
+    excludedTag: '미분류',
 });

@@ -1,63 +1,65 @@
-// filename must equal to first level of url domain.
-// e.g. mse.snu.ac.kr -> mse.ts
-
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
-import { Notice, File } from '../../../server/src/notice/notice.entity.js';
-import { CategoryTag, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { RequestQueue } from 'apify';
+import { Crawler } from '../../classes/crawler';
+import { EDU, INF } from '../../constants';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, removeUrlPageParam, saveNotice } from '../../utils';
+import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
-import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { ENGINEERING } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler';
 
-class MSECrawler extends CategoryCrawler {
+export class SocialEduCrawler extends CategoryCrawler {
+    protected readonly encoding: string = 'EUC-KR';
+
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
 
         this.log.info('Page opened.', { url });
+
         if ($ !== undefined) {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-
             $('img').each((index, element) => {
                 const imgSrc = $(element).attr('src');
-                if (imgSrc && !imgSrc.startsWith('data')) {
+                if (imgSrc) {
                     $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
                 }
             });
-
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            const title = $('div.g_head div.title').text().trim();
-            notice.title = title;
-            const contentElement = $('div.g_body');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            notice.title = $('span.bbs_subject_css').text().trim();
+            const contentElement = $('div.bbs_view_middle');
+            let content = contentElement.html() ?? '';
+            content = load(content, { decodeEntities: false })('body').html()?.trim() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
+            const fullDateString: string = siteData.dateString;
+            // example: '2021-02-26'
+            notice.createdAt = strptime(fullDateString, '%Y-%m-%d');
 
             notice.isPinned = siteData.isPinned;
+
             notice.link = url;
 
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('ul.file_list li a').each((index, element) => {
+            $('span.txt05 a').each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? notice.link;
+                    file.link = notice.link;
                     files.push(file);
                 }
             });
+
             await Promise.all(
                 // using Promise.all in order to ensure full execution
                 files.map(async (file) => {
@@ -65,20 +67,8 @@ class MSECrawler extends CategoryCrawler {
                     await getOrCreate(File, file);
                 }),
             );
+            const tags: string[] = [this.categoryTags[siteData.tag ?? ''] ?? '공지사항'];
 
-            const category = $('div.cate').text().trim();
-            const tags: string[] = [];
-            const translateWords: CategoryTag = {
-                Undergraduate: '학부',
-                Graduate: '대학원',
-                취업: '취업',
-            };
-            if (siteData.tag) {
-                tags.push(this.categoryTags[siteData.tag]);
-            }
-            if (category && category !== '') {
-                tags.push(translateWords[category]);
-            }
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
@@ -89,24 +79,32 @@ class MSECrawler extends CategoryCrawler {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
+        let lastNoticeId = INF;
         this.log.info('Page opened.', { url });
-
         if ($ !== undefined) {
-            $('ul.list_wrap li').each((index, element) => {
-                const titleElement = $(element).find('a');
-                let link = absoluteLink(titleElement.attr('href'), this.baseUrl);
+            const urlInstance = new URL(url);
+            const pageString = urlInstance.searchParams.get('page') ?? '1';
+            const page: number = +pageString;
 
+            $('div.bbs_list_css').each((index, element) => {
+                const noticeNum = $(element).find('tr td:nth-child(1)').text().trim();
+                const isPinned = noticeNum === '';
+
+                if (!isPinned) {
+                    lastNoticeId = Math.min(lastNoticeId, +noticeNum);
+                }
+
+                const titleElement = $(element).find('tr td:nth-child(2) a');
+                // const title = titleElement.text();
+
+                const link = removeUrlPageParam(absoluteLink(titleElement.attr('href'), request.loadedUrl));
                 if (link === undefined) return;
-                const nextLinkUrlInstance = new URL(link);
-                nextLinkUrlInstance.searchParams.delete('pg');
-                link = nextLinkUrlInstance.href;
-                const dateString = $(element)
-                    .html()
-                    ?.match(/[0-9]{4}.[0-9]{2}.[0-9]{2}/g)?.[0];
-                if (!dateString) return;
+
+                const dateString = $(element).find('tr td:nth-child(4)').text().trim();
+
                 const newSiteData: SiteData = {
                     department: siteData.department,
-                    isPinned: false,
+                    isPinned,
                     isList: false,
                     dateString,
                     tag: siteData.tag,
@@ -118,15 +116,11 @@ class MSECrawler extends CategoryCrawler {
                 });
             });
 
-            const hasNext = $('a.last').attr('href') !== undefined;
-            const urlInstance = new URL(url);
-            const page: number = +(urlInstance.searchParams.get('pg') ?? 1);
-
-            if (hasNext) {
-                const nextListUrlInstance = new URL(url);
-                nextListUrlInstance.searchParams.set('pg', `${page + 1}`);
-
-                const nextList: string = nextListUrlInstance.href;
+            const nextListUrlInstance = new URL(url);
+            nextListUrlInstance.searchParams.set('page', `${page + 1}`);
+            const nextList = nextListUrlInstance.href;
+            // lastNoticeId === 1  <==> loaded page is the last page
+            if (lastNoticeId > 1) {
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -151,13 +145,12 @@ class MSECrawler extends CategoryCrawler {
     };
 }
 
-export const mse = new MSECrawler({
-    departmentName: '재료공학부',
-    departmentCode: 'mse',
-    baseUrl: 'https://mse.snu.ac.kr/board/board.php?pg=1&bo_table=',
-    departmentCollege: ENGINEERING,
+export const socialEdu = new SocialEduCrawler({
+    departmentName: '사회교육과',
+    departmentCode: 'socialedu', // this value must be equal to the filename
+    departmentCollege: EDU,
+    baseUrl: 'https://socialedu.snu.ac.kr/sub6/6_1.php?page=1&b_name=notice',
     categoryTags: {
         notice: '공지사항',
-        seminar: '세미나',
     },
 });

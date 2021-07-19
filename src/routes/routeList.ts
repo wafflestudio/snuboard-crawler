@@ -47,60 +47,88 @@ import { clothing } from './che/clothing';
 import { consumer } from './che/consumer';
 import { foodNutrition } from './che/foodnutrition';
 import { music } from './music/music';
+import { linguist } from './humanities/linguist';
 import { geog } from './social/geog';
 import { stat } from './science/stat';
-import { medicine } from './medicine/medicine';
+import { religion } from './humanities/religion';
+import { philosophy } from './humanities/philosophy';
+import { communication } from './social/communication';
+import { archaeologyArthistory } from './humanities/archaeology-arthistory';
+import { socialEdu } from './edu/socialedu';
+import { ethics } from './edu/ethics';
+import { engEdu } from './edu/engedu';
+import { art } from './art/art';
+import { asia } from './humanities/asia';
+import { snuCll } from './humanities/snucll';
+import { snuFrance } from './humanities/snufrance';
+import { english } from './humanities/english';
+import { russian } from './humanities/russian';
+import { spanish } from './humanities/spanish';
 
 export const crawlerList: Crawler[] = [
-    cse,
-    ee,
-    cbe,
-    ere,
-    me,
+    // cse,
+    // ee,
+    // cbe,
+    // ere,
+    // me,
     ie,
     ship,
-    cee,
-    architecture,
+    // cee,
+    // architecture,
     mse,
-    // math,
-    physics,
+    math,
+    // physics,
     sees,
-    // chem,
-    ir,
-    snuPharm,
-    vet,
-    cls,
-    social,
-    biosci,
-    cals,
-    aerospace,
-    econ,
+    chem,
+    // ir,
+    // snuPharm,
+    // vet,
+    // cls,
+    // social,
+    // biosci,
+    // cals,
+    // aerospace,
+    // econ,
     humanities,
-    nursing,
+    // nursing,
     cba,
-    german,
-    koreanHistory,
-    asianHistory,
-    wHistory,
-    meeHak,
-    chemEdu,
-    earthEdu,
-    french,
-    geoEdu,
-    histoEdu,
-    korEdu,
-    learning,
-    mathEd,
-    physed,
-    sports,
-    che,
+    // german,
+    // koreanHistory,
+    // asianHistory,
+    // wHistory,
+    // meeHak,
+    // chemEdu,
+    // earthEdu,
+    // french,
+    // geoEdu,
+    // histoEdu,
+    // korEdu,
+    // learning,
+    // mathEd,
+    // physed,
+    // sports,
+    // che,
     childFamily,
-    clothing,
-    consumer,
-    foodNutrition,
-    music,
+    // clothing,
+    // consumer,
+    // foodNutrition,
+    // music,
+    linguist,
     geog,
     stat,
-    medicine,
+    religion,
+    philosophy,
+    communication,
+    archaeologyArthistory,
+    socialEdu,
+    ethics,
+    engEdu,
+    art,
+    asia,
+    snuCll,
+    snuFrance,
+    english,
+    russian,
+    spanish,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

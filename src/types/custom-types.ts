@@ -17,6 +17,7 @@ export interface CrawlerInit {
     departmentName: string;
     departmentCode: string;
     departmentCollege: string;
+    departmentLink?: string;
     baseUrl: string;
 }
 

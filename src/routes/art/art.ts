@@ -1,28 +1,19 @@
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { load } from 'cheerio';
-import * as Apify from 'apify';
 import { RequestQueue } from 'apify';
 import { Connection } from 'typeorm';
 import assert from 'assert';
-import { strptime } from '../micro-strptime';
-import { File, Notice } from '../../server/src/notice/notice.entity';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
-import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
-import { Crawler } from './crawler';
-import { Department } from '../../server/src/department/department.entity';
-import { createRequestQueueConnection, isBasePushCondition, listExists } from '../database';
+import * as Apify from 'apify';
+import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { ART, INF } from '../../constants';
+import { CrawlerOption, SiteData, TitleAndTags } from '../../types/custom-types';
+import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, removeUrlPageParam, saveNotice } from '../../utils';
+import { File, Notice } from '../../../server/src/notice/notice.entity';
+import { strptime } from '../../micro-strptime';
+import { Department } from '../../../server/src/department/department.entity';
+import { createRequestQueueConnection, isBasePushCondition } from '../../database';
 
-export class CategoryCrawler extends Crawler {
-    protected readonly categoryTags: CategoryTag;
-
-    protected readonly excludedTag?: string;
-
-    constructor(initData: CategoryCrawlerInit) {
-        super(initData);
-        this.categoryTags = initData.categoryTags;
-        this.excludedTag = initData.excludedTag;
-    }
-
+class ArtCrawler extends CategoryCrawler {
     handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
@@ -34,25 +25,21 @@ export class CategoryCrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-            $('img').each((index, element) => {
-                const imgSrc = $(element).attr('src');
-                if (imgSrc && !imgSrc.startsWith('data')) {
-                    $(element).attr('src', absoluteLink(imgSrc, this.baseUrl) ?? '');
-                }
-            });
+
             const notice = await getOrCreate(Notice, { link: url }, false);
 
+            const titleTag = parseTitle($('h1.article-title').text().trim());
             notice.department = siteData.department;
-            notice.title = $('dl.cHeader dt').text().trim();
-            const contentElement = $('div.postArea');
+            notice.title = titleTag.title;
+            const contentElement = $('div.entry-content');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+            content = load(content, { decodeEntities: false })('body').html()?.trim() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            const fullDateString: string = $('li.regdate').text().substring(2).trim();
-            // example: '2021-02-26 11:34:01'
-            notice.createdAt = strptime(fullDateString, '%Y-%m-%d %H:%M:%S');
+            const fullDateString: string = siteData.dateString.replace(/\s/g, '');
+            // example: '2021/02/26'
+            notice.createdAt = strptime(fullDateString, '%Y/%m/%d');
 
             notice.isPinned = siteData.isPinned;
 
@@ -61,12 +48,12 @@ export class CategoryCrawler extends Crawler {
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('a.down').each((index, element) => {
+            $('li.down-items a').each((index, element) => {
                 const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
-                    file.name = $(element).text().trim();
-                    file.link = absoluteLink(fileUrl, this.baseUrl) ?? '';
+                    [file.name] = fileUrl.split('/').slice(-1);
+                    file.link = fileUrl;
                     files.push(file);
                 }
             });
@@ -78,19 +65,13 @@ export class CategoryCrawler extends Crawler {
                     await getOrCreate(File, file);
                 }),
             );
-
-            let tags: string[] = [];
-            const liCategory = $('li.category');
-            if (liCategory.length) {
-                liCategory.each((index, element) => {
-                    tags.push($(element).text().substring(4).trim());
+            const tags: string[] = [this.categoryTags[siteData.tag ?? ''] ?? '공지사항'];
+            if (titleTag.tags[0]) {
+                titleTag.tags[0].split('/').forEach((element) => {
+                    tags.push(element);
                 });
             }
-            const category = siteData.tag;
-            if (category && this.categoryTags[category] && !tags.includes(this.categoryTags[category])) {
-                tags.push(this.categoryTags[category]);
-            }
-            tags = tags.filter((tag) => tag !== this.excludedTag);
+
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
@@ -103,22 +84,22 @@ export class CategoryCrawler extends Crawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
         if ($ !== undefined) {
-            const urlInstance = new URL(url);
-            const pageString = urlInstance.pathname.match(/[0-9]+\\?/)?.[0];
-            const page: number = +(pageString ?? 1);
-            // example:  url~/page/{page}?pmove~ ->
+            // http://art.snu.ac.kr/notice/page/119/?catemenu=Notice&type=Events
+            // get the page from the second element starts from the last
+            const page: number = +url.split('/').slice(-2)[0];
 
-            $('table.lc01 tbody tr').each((index, element) => {
-                const noticeNum = $(element).children('td').first().text().trim();
-                const isPinned = noticeNum === '공지' || noticeNum === 'Notice';
-                if (page > 1 && isPinned) return;
+            $('table#posttextlist tr').each((index, element) => {
+                const isPinned = !$(element).hasClass('hentry');
 
-                const titleElement = $($(element).find('a'));
+                if (isPinned && page > 1) return;
+
+                const titleElement = $(element).find('td.ttitle a');
                 // const title = titleElement.text();
 
-                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
+                const link = titleElement.attr('href');
                 if (link === undefined) return;
-                const dateString = $($(element).children('td')[4]).text().trim();
+
+                const dateString = $(element).find('td.tdate').text().trim();
 
                 const newSiteData: SiteData = {
                     department: siteData.department,
@@ -134,23 +115,9 @@ export class CategoryCrawler extends Crawler {
                 });
             });
 
-            let nextPathArray = urlInstance.pathname.split('/');
-            if (pageString) nextPathArray = nextPathArray.slice(0, -2);
-            const nextPath = nextPathArray.join('/');
-
-            const nextList = absoluteLink(`${nextPath}/page/${page + 1}`, request.loadedUrl);
-            if (!nextList) return;
-
-            const lastNoticeId: string | undefined = $('table.lc01 tbody tr')
-                .last()
-                .children('td')
-                .first()
-                .text()
-                .trim();
-            if (!lastNoticeId || Number.isNaN(+lastNoticeId)) return;
-
-            // +lastNoticeId === 1  <==> loaded page is the last page
-            if (+lastNoticeId > 1) {
+            if (siteData.tag === undefined) return;
+            const nextList = `http://art.snu.ac.kr/${siteData.tag}/page/${page + 1}/?catemenu=News&type=Events`;
+            if ($('a.nextpostslink').length !== 0) {
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
                     department: siteData.department,
@@ -210,7 +177,9 @@ export class CategoryCrawler extends Crawler {
         } else {
             await Promise.all(
                 categories.map(async (category) => {
-                    const categoryUrl = this.baseUrl + category;
+                    const categoryUrl = `${this.baseUrl + category}/page/1/?catemenu=${
+                        category === 'notice' ? 'Notice' : 'News'
+                    }&type=Events`;
                     const siteData: SiteData = {
                         department,
                         isList: true,
@@ -241,3 +210,14 @@ export class CategoryCrawler extends Crawler {
         this.log.info('Crawler Ended');
     };
 }
+
+export const art = new ArtCrawler({
+    departmentName: '미술대학',
+    departmentCode: 'art',
+    departmentCollege: ART,
+    baseUrl: 'http://art.snu.ac.kr/',
+    categoryTags: {
+        'category/college-of-fine-arts': '뉴스',
+        notice: '공지사항',
+    },
+});

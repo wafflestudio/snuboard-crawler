@@ -17,6 +17,7 @@ export class GeogCrawler extends CategoryCrawler {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
+        const boardCategory: string = url.split('/')[4];
 
         this.log.info('Page opened.', { url });
 
@@ -33,8 +34,7 @@ export class GeogCrawler extends CategoryCrawler {
             notice.department = siteData.department;
 
             // find category in stat.snu.ac.kr & geog.snu.ac.kr
-            const tagTitle = parseTitle($('div.board_view_header strong.tit').text().trim());
-            notice.title = tagTitle.title;
+            notice.title = $('div.board_view_header strong.tit').text().trim();
 
             const contentElement = $('div.board_view_content');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
@@ -66,18 +66,14 @@ export class GeogCrawler extends CategoryCrawler {
             );
 
             let tags: string[] = [];
-            tagTitle.tags = tagTitle.tags.flatMap((tag) => tag.split('/')).map((tag) => tag.trim());
-            tagTitle.tags.forEach((tag) => {
-                tags.push(tag);
-            });
 
-            // find category in geog.snu.ac.kr
+            // find category in geog.snu.ac.kr and communication.snu.ac.kr
             const category = $('em.cate').text().trim();
             if (category.length > 0) {
                 tags.push(category);
             }
 
-            const boardCategory: string = url.split('/')[4];
+            // geog의 장학 게시판, stat의 취업정보 게시
             if (['장학', '취업정보'].includes(this.categoryTags[boardCategory])) {
                 tags = [];
             }
@@ -111,7 +107,7 @@ export class GeogCrawler extends CategoryCrawler {
                     const nextUrl = new URL(request.loadedUrl);
                     if (nextUrl === undefined) return;
                     nextUrl.searchParams.set('board_mode', 'VIEW');
-                    // nextUrl.searchParams.set('var_page', '1');
+                    nextUrl.searchParams.delete('var_page');
                     nextUrl.searchParams.set('search_field', 'ALL');
                     nextUrl.searchParams.set('search_task', 'ALL');
                     nextUrl.searchParams.set('bid', noticeNum);
@@ -131,9 +127,9 @@ export class GeogCrawler extends CategoryCrawler {
                 });
 
             const nextPage = +(
-                new URL(absoluteLink($('div.paging a.next').attr('href'), request.loadedUrl) ?? '').searchParams.get(
-                    'var_page',
-                ) ?? 1
+                new URL(
+                    absoluteLink($('div.paging a.next').attr('href'), request.loadedUrl) ?? this.baseUrl,
+                ).searchParams.get('var_page') ?? 1
             );
 
             if (page !== nextPage) {

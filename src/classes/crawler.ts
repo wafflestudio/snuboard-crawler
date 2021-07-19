@@ -15,7 +15,6 @@ import {
     isBasePushCondition,
     isEarlyStopCondition,
     listCount,
-    listExists,
     urlInQueue,
 } from '../database';
 
@@ -23,6 +22,8 @@ export abstract class Crawler {
     protected readonly departmentName: string;
 
     public readonly departmentCode: string;
+
+    public readonly departmentLink: string;
 
     protected readonly departmentCollege: string;
 
@@ -41,6 +42,7 @@ export abstract class Crawler {
     public constructor(initData: CrawlerInit) {
         this.departmentName = initData.departmentName;
         this.departmentCode = initData.departmentCode;
+        this.departmentLink = initData.departmentLink ?? `${initData.departmentCode}.snu.ac.kr/`;
         this.departmentCollege = initData.departmentCollege;
         this.baseUrl = initData.baseUrl;
         this.startTime = Math.floor(new Date().getTime() / 1000);
@@ -64,6 +66,8 @@ export abstract class Crawler {
             name: this.departmentName,
             college: this.departmentCollege,
         });
+        department.link = this.departmentLink;
+        await Department.save(department);
         this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
         const siteData: SiteData = {

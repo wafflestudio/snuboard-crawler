@@ -37,13 +37,16 @@ export abstract class Crawler {
 
     protected readonly log;
 
+    protected readonly excludedTags?: string[];
+
     protected requestQueueDB?: sqlite3.Database;
 
     public constructor(initData: CrawlerInit) {
         this.departmentName = initData.departmentName;
         this.departmentCode = initData.departmentCode;
-        this.departmentLink = initData.departmentLink ?? `${initData.departmentCode}.snu.ac.kr/`;
+        this.departmentLink = initData.departmentLink ?? `http://${initData.departmentCode}.snu.ac.kr/`;
         this.departmentCollege = initData.departmentCollege;
+        this.excludedTags = initData.excludedTags;
         this.baseUrl = initData.baseUrl;
         this.startTime = Math.floor(new Date().getTime() / 1000);
 

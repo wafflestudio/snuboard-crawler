@@ -35,7 +35,6 @@ class LinguistCrawler extends CategoryCrawler {
             const tags = [];
             if (title.startsWith('[')) {
                 titleText = title.slice(title.indexOf(']') + 1).trim();
-                tags.push(title.slice(1, title.indexOf(']')).trim());
             }
             notice.title = titleText;
             const fileElement = $('div.attached');

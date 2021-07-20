@@ -72,9 +72,6 @@ class EECrawler extends CategoryCrawler {
 
             const category = url.replace(this.baseUrl, '').split('?')[0];
             const tags = [this.categoryTags[category]];
-            if (!this.excludeTags.includes(category) && title.startsWith('[')) {
-                tags.push(title.slice(1, title.indexOf(']')).trim());
-            }
             await getOrCreateTags(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');

@@ -80,7 +80,7 @@ export class GeogCrawler extends CategoryCrawler {
             tags.push(this.categoryTags[boardCategory]);
 
             tags = tags.filter((tag) => tag !== this.excludedTag);
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTags(tags, notice, siteData.department, this.excludedTags);
         }
     };
 

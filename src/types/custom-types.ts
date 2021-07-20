@@ -46,3 +46,12 @@ export interface ChemPageSummary {
     file_path1: string;
     visit_cnt: string;
 }
+
+export interface MedPageSummary {
+    rn: string;
+    frstRegistPnttm: string;
+    nttId: string;
+    nttNo: string;
+    codeNm: string;
+    pageIndex: string;
+}

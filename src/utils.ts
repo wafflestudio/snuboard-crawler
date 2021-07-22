@@ -3,6 +3,7 @@ import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
 import { TitleAndTags } from './types/custom-types';
+import { Crawler } from './classes/crawler';
 
 export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPartial<T>, save = true): Promise<T> {
     // find T element with entityLike property if it exists.
@@ -70,4 +71,10 @@ export function parseTitle(titleText: string): TitleAndTags {
                   .filter((tag) => tag.length)
             : [];
     return { title, tags };
+}
+
+export async function addDepartmentProperty(department: Department, crawler: Crawler) {
+    department.link = crawler.departmentLink;
+    department.style = crawler.style;
+    await Department.save(department);
 }

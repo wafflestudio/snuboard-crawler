@@ -7,7 +7,15 @@ import * as Apify from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { ART, INF } from '../../constants';
 import { CrawlerOption, SiteData, TitleAndTags } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, removeUrlPageParam, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    addDepartmentProperty,
+    getOrCreate,
+    getOrCreateTags,
+    parseTitle,
+    removeUrlPageParam,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { Department } from '../../../server/src/department/department.entity';
@@ -149,8 +157,7 @@ class ArtCrawler extends CategoryCrawler {
             name: this.departmentName,
             college: this.departmentCollege,
         });
-        department.link = this.departmentLink;
-        await Department.save(department);
+        await addDepartmentProperty(department, this);
         this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
         const categories: string[] = Object.keys(this.categoryTags);

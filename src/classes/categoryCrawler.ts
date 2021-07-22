@@ -6,7 +6,7 @@ import { Connection } from 'typeorm';
 import assert from 'assert';
 import { strptime } from '../micro-strptime';
 import { File, Notice } from '../../server/src/notice/notice.entity';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
+import { absoluteLink, addDepartmentProperty, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
 import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
@@ -182,8 +182,7 @@ export class CategoryCrawler extends Crawler {
             name: this.departmentName,
             college: this.departmentCollege,
         });
-        department.link = this.departmentLink;
-        await Department.save(department);
+        await addDepartmentProperty(department, this);
         this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
         const categories: string[] = Object.keys(this.categoryTags);

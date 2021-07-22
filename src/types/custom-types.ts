@@ -20,6 +20,7 @@ export interface CrawlerInit {
     departmentLink?: string;
     baseUrl: string;
     excludedTags?: string[];
+    style?: string;
 }
 
 export interface CategoryCrawlerInit extends CrawlerInit {

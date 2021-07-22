@@ -158,4 +158,5 @@ export const ee = new EECrawler({
         sugang: '수강',
         yonhapai: '인공지능',
     },
+    style: 'ol { list-style-type : none;}',
 });

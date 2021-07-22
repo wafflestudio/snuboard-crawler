@@ -7,7 +7,7 @@ import Request, { RequestOptions } from 'apify/types/request';
 import * as sqlite3 from 'sqlite3';
 import { appendIssue, createIssue } from '../github';
 import { CrawlerInit, CrawlerOption, SiteData } from '../types/custom-types';
-import { getOrCreate } from '../utils';
+import { addDepartmentProperty, getOrCreate } from '../utils';
 import { Department } from '../../server/src/department/department.entity';
 import {
     closeSqliteDB,
@@ -39,6 +39,8 @@ export abstract class Crawler {
 
     protected readonly excludedTags?: string[];
 
+    public readonly style: string;
+
     protected requestQueueDB?: sqlite3.Database;
 
     public constructor(initData: CrawlerInit) {
@@ -47,6 +49,7 @@ export abstract class Crawler {
         this.departmentLink = initData.departmentLink ?? `http://${initData.departmentCode}.snu.ac.kr/`;
         this.departmentCollege = initData.departmentCollege;
         this.excludedTags = initData.excludedTags;
+        this.style = initData.style ?? '';
         this.baseUrl = initData.baseUrl;
         this.startTime = Math.floor(new Date().getTime() / 1000);
 
@@ -69,8 +72,7 @@ export abstract class Crawler {
             name: this.departmentName,
             college: this.departmentCollege,
         });
-        department.link = this.departmentLink;
-        await Department.save(department);
+        await addDepartmentProperty(department, this);
         this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
         // department-specific initialization urls
         const siteData: SiteData = {

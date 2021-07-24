@@ -112,6 +112,7 @@ class ReligionCrawler extends CategoryCrawler {
                     isPinned,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                     tag: siteData.tag,
                 };
                 this.log.info('Enqueueing', { nextLink });

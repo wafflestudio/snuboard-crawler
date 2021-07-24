@@ -99,6 +99,7 @@ class EECrawler extends CategoryCrawler {
                     department: siteData.department,
                     isPinned: false,
                     isList: false,
+                    commonUrl: siteData.commonUrl,
                     dateString,
                 };
                 this.log.info('Enqueueing', { link });

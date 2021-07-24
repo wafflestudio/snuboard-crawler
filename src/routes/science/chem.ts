@@ -103,6 +103,7 @@ class ChemCrawler extends CategoryCrawler {
                     isPinned: false,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                     tag,
                 };
                 this.log.info('Enqueueing', { link });

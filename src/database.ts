@@ -1,8 +1,9 @@
 import * as path from 'path';
-import { Connection, createConnection } from 'typeorm';
+import { Connection, createConnection, getConnection } from 'typeorm';
 import * as sqlite3 from 'sqlite3';
 import { TRUE_STRING } from './constants';
 import ormConfig from './ormconfig';
+import { Notice } from '../server/src/notice/notice.entity';
 
 export async function createDBConnection(): Promise<Connection> {
     return createConnection(ormConfig);
@@ -30,6 +31,18 @@ export async function getSqlite(db: sqlite3.Database, sql: string, params?: any[
                 reject(err);
             } else {
                 resolve(row);
+            }
+        });
+    });
+}
+
+export async function getAllSqlite(db: sqlite3.Database, sql: string, params?: any[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(rows);
             }
         });
     });
@@ -120,17 +133,28 @@ export async function listCount(db: sqlite3.Database, commonUrl: string | null):
 export async function noticeCount(db: sqlite3.Database, commonUrl: string | null): Promise<number> {
     let result;
     if (commonUrl === null) {
-        result = await getSqlite(
+        result = await getAllSqlite(
             db,
-            `SELECT COUNT(*) FROM request_queues_requests WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":false%';`,
+            `SELECT url  FROM request_queues_requests WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":false%';`,
         );
     } else {
-        result = await getSqlite(
+        result = await getAllSqlite(
             db,
-            `SELECT COUNT(*) FROM request_queues_requests 
+            `SELECT url  FROM request_queues_requests 
              WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":false%' AND json LIKE ? ESCAPE ?;`,
             [`%"commonUrl":"${commonUrl.replace('%', '\\%').replace('_', '\\_')}"%`, '\\'],
         );
     }
-    return result['COUNT(*)'];
+    const urls = result.map((res: { url: any }) => res.url);
+    if (urls.length === 0) {
+        return 0;
+    }
+    const alreadyCrawled = await getConnection()
+        .getRepository(Notice)
+        .createQueryBuilder('notice')
+        .where('link IN (:urls)')
+        .setParameter('urls', urls)
+        .getCount();
+
+    return result.length - alreadyCrawled;
 }

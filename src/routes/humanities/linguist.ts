@@ -101,6 +101,7 @@ class LinguistCrawler extends CategoryCrawler {
                     isPinned: false,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                     tag: this.categoryTags[category ?? ''],
                 };
                 this.log.info('Enqueueing', { link });

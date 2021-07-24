@@ -109,6 +109,7 @@ class MSECrawler extends CategoryCrawler {
                     isPinned: false,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                     tag: siteData.tag,
                 };
                 this.log.info('Enqueueing', { link });

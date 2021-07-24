@@ -125,6 +125,7 @@ export class CategoryCrawler extends Crawler {
                     isPinned,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                     tag: siteData.tag,
                 };
                 this.log.info('Enqueueing', { link });

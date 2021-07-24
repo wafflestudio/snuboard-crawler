@@ -1,12 +1,12 @@
+import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { load } from 'cheerio';
+import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { HUMANITIES } from '../../constants';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { SiteData } from '../../types/custom-types';
 import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { load } from 'cheerio';
 import { strptime } from '../../micro-strptime';
-import { RequestQueue } from 'apify';
 
 class SnucllCrawler extends CategoryCrawler {
     private categories = ['공지사항', '장학정보', '취업정보', '중문과 소식', '채용정보'];
@@ -121,6 +121,7 @@ class SnucllCrawler extends CategoryCrawler {
                     isPinned,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                     tag: titleTags.tags?.[0],
                 };
                 this.log.info('Enqueueing', { nextLink });

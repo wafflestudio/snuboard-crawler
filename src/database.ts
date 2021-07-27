@@ -131,30 +131,47 @@ export async function listCount(db: sqlite3.Database, commonUrl: string | null):
 }
 
 export async function noticeCount(db: sqlite3.Database, commonUrl: string | null): Promise<number> {
-    let result;
+    let unpinnedUnhandled;
+    let unpinnedCount;
     if (commonUrl === null) {
-        result = await getAllSqlite(
+        unpinnedUnhandled = await getAllSqlite(
             db,
-            `SELECT url  FROM request_queues_requests WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":false%';`,
+            `SELECT url  FROM request_queues_requests WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":false%' AND json LIKE '%"isPinned":false%';`,
+        );
+        unpinnedCount = await getSqlite(
+            db,
+            `SELECT COUNT(*)  FROM request_queues_requests WHERE json LIKE '%"isList":false%' AND json LIKE '%"isPinned":false%';`,
         );
     } else {
-        result = await getAllSqlite(
+        unpinnedUnhandled = await getAllSqlite(
             db,
             `SELECT url  FROM request_queues_requests 
-             WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":false%' AND json LIKE ? ESCAPE ?;`,
+             WHERE json NOT LIKE '%"handledAt":%' AND json LIKE '%"isList":false%' AND json LIKE ? ESCAPE ? AND json LIKE '%"isPinned":false%';`,
+            [`%"commonUrl":"${commonUrl.replace('%', '\\%').replace('_', '\\_')}"%`, '\\'],
+        );
+        unpinnedCount = await getSqlite(
+            db,
+            `SELECT COUNT(*)  FROM request_queues_requests 
+             WHERE json LIKE '%"isList":false%' AND json LIKE ? ESCAPE ? AND json LIKE '%"isPinned":false%';`,
             [`%"commonUrl":"${commonUrl.replace('%', '\\%').replace('_', '\\_')}"%`, '\\'],
         );
     }
-    const urls = result.map((res: { url: any }) => res.url);
-    if (urls.length === 0) {
+
+    if (unpinnedCount['COUNT(*)'] === 0) {
+        return 1; // continue crawling
+    }
+    if (unpinnedUnhandled.length === 0) {
         return 0;
     }
+
     const alreadyCrawled = await getConnection()
         .getRepository(Notice)
         .createQueryBuilder('notice')
         .where('link IN (:urls)')
-        .setParameter('urls', urls)
+        .setParameter(
+            'urls',
+            unpinnedUnhandled.map((res: { url: any }) => res.url),
+        )
         .getCount();
-
-    return result.length - alreadyCrawled;
+    return unpinnedUnhandled.length - alreadyCrawled;
 }

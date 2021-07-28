@@ -6,7 +6,7 @@ import { Connection } from 'typeorm';
 import assert from 'assert';
 import { strptime } from '../micro-strptime';
 import { File, Notice } from '../../server/src/notice/notice.entity';
-import { absoluteLink, addDepartmentProperty, getOrCreate, getOrCreateTags, saveNotice } from '../utils';
+import { absoluteLink, addDepartmentProperty, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../utils';
 import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
@@ -91,7 +91,7 @@ export class CategoryCrawler extends Crawler {
                 tags.push(this.categoryTags[category]);
             }
             tags = tags.filter((tag) => tag !== this.excludedTag);
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

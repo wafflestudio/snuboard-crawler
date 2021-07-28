@@ -3,7 +3,7 @@ import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
 import { SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, removeUrlPageParam, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
@@ -64,7 +64,7 @@ class MathCrawler extends Crawler {
             } else {
                 tags.push('미분류');
             }
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

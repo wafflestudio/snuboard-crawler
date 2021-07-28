@@ -4,6 +4,8 @@ import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
 import { TitleAndTags } from './types/custom-types';
 import { Crawler } from './classes/crawler';
+import { sendNoticeCreationMessage } from './firebase';
+import { TRUE_STRING } from './constants';
 
 export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPartial<T>, save = true): Promise<T> {
     // find T element with entityLike property if it exists.
@@ -18,7 +20,7 @@ export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPa
     return element;
 }
 
-export async function getOrCreateTags(
+export async function getOrCreateTagsWithMessage(
     tags: string[],
     notice: Notice,
     department: Department,
@@ -30,6 +32,29 @@ export async function getOrCreateTags(
     if (excludedTags !== undefined) {
         tags = tags.filter((tag) => !excludedTags.includes(tag));
     }
+
+    const isMessage = TRUE_STRING.includes(process.env.MESSAGE ?? '');
+    if (isMessage) {
+        await sendMessageIfCreated(tags, notice, department);
+    }
+
+    await getOrCreateTags(tags, notice, department);
+}
+
+export async function sendMessageIfCreated(tags: string[], notice: Notice, department: Department) {
+    const isSendMessageCondition = await NoticeTag.findOne({ notice });
+    if (isSendMessageCondition === undefined) {
+        await Promise.all(
+            tags.map(async (tag) => {
+                await sendNoticeCreationMessage(tag, notice, department);
+            }),
+        );
+    }
+}
+
+export async function getOrCreateTags(tags: string[], notice: Notice, department: Department): Promise<void> {
+    // tags: list of tag names
+    // creates Tag and NoticeTag elements.
     await Promise.all(
         tags.map(async (tagName) => {
             const tag = await getOrCreate(Tag, { department, name: tagName });

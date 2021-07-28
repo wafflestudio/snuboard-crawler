@@ -11,7 +11,7 @@ import {
     absoluteLink,
     addDepartmentProperty,
     getOrCreate,
-    getOrCreateTags,
+    getOrCreateTagsWithMessage,
     parseTitle,
     removeUrlPageParam,
     saveNotice,
@@ -80,7 +80,7 @@ class ArtCrawler extends CategoryCrawler {
                 });
             }
 
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

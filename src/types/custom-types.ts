@@ -13,6 +13,10 @@ export interface CategoryTag {
     [key: string]: string;
 }
 
+export interface StringKey {
+    [key: string]: string;
+}
+
 export interface CrawlerInit {
     departmentName: string;
     departmentCode: string;

@@ -7,7 +7,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, parseTitle, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
 import { SOCIAL } from '../../constants';
@@ -80,7 +80,7 @@ export class GeogCrawler extends CategoryCrawler {
             tags.push(this.categoryTags[boardCategory]);
 
             tags = tags.filter((tag) => tag !== this.excludedTag);
-            await getOrCreateTags(tags, notice, siteData.department, this.excludedTags);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department, this.excludedTags);
         }
     };
 

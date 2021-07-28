@@ -3,7 +3,7 @@ import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
 import { SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
@@ -71,7 +71,7 @@ export class BiosciCrawler extends Crawler {
             if (siteData.tag !== undefined) {
                 tags.push(siteData.tag);
             }
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

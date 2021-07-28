@@ -131,6 +131,7 @@ dist
 .env.prod
 *.pem
 *.lock
+fbconfig.json
 
 # Crawler logs
 error.log*

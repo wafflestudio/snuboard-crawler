@@ -5,7 +5,7 @@ import { URL } from 'url';
 import { HUMANITIES, INF } from '../../constants';
 import { Crawler } from '../../classes/crawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, parseTitle, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -75,7 +75,7 @@ class SnuFranceCrawler extends Crawler {
 
             const tags: string[] = ['공지사항'];
 
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         }
     };
 

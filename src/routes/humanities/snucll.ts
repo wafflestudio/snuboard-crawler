@@ -2,7 +2,7 @@ import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { HUMANITIES } from '../../constants';
 import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, parseTitle, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, parseTitle, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { load } from 'cheerio';
 import { strptime } from '../../micro-strptime';
@@ -88,7 +88,7 @@ class SnucllCrawler extends CategoryCrawler {
 
             if (boardId === null) return;
             tags.push(this.categories[+boardId - 1]);
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

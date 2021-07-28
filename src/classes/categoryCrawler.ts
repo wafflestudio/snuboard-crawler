@@ -104,7 +104,7 @@ export class CategoryCrawler extends Crawler {
         this.log.info('Page opened.', { url });
         if ($ !== undefined) {
             const urlInstance = new URL(url);
-            const pageString = urlInstance.pathname.match(/[0-9]+\\?/)?.[0];
+            const pageString = urlInstance.pathname.match(/page\/([0-9]+)/)?.[1];
             const page: number = +(pageString ?? 1);
             // example:  url~/page/{page}?pmove~ ->
 

@@ -102,6 +102,7 @@ class IRCrawler extends CategoryCrawler {
                     isPinned,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({

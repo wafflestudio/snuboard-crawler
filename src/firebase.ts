@@ -1,11 +1,11 @@
 import * as admin from 'firebase-admin';
 import { ServiceAccount } from 'firebase-admin/lib/credential';
 
-import config from '../fbconfig.json';
+import { fbConfig } from './fbconfig';
 import { Department } from '../server/src/department/department.entity';
 import { Notice } from '../server/src/notice/notice.entity';
 
-admin.initializeApp({ credential: admin.credential.cert(<ServiceAccount>config) });
+admin.initializeApp({ credential: admin.credential.cert(fbConfig) });
 
 export async function sendNoticeCreationMessage(condition: string, notice: Notice, department: Department) {
     const message = {

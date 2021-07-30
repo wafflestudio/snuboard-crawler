@@ -2,7 +2,7 @@ import { EntityTarget, getConnection, getRepository } from 'typeorm';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
-import { TitleAndTags } from './types/custom-types';
+import { StringKey, TitleAndTags } from './types/custom-types';
 import { Crawler } from './classes/crawler';
 import { sendNoticeCreationMessage } from './firebase';
 import { TRUE_STRING } from './constants';
@@ -44,12 +44,25 @@ export async function getOrCreateTagsWithMessage(
 export async function sendMessageIfCreated(tags: string[], notice: Notice, department: Department) {
     const isSendMessageCondition = await NoticeTag.findOne({ notice });
     if (isSendMessageCondition === undefined) {
-        await Promise.all(
-            tags.map(async (tag) => {
-                await sendNoticeCreationMessage(tag, notice, department);
-            }),
-        );
+        let idx = 0;
+        const offset = 5;
+        while (idx < tags.length) {
+            await sendNoticeCreationMessage(
+                parseTagsToCondition(tags.slice(idx, idx + offset), department),
+                notice,
+                department,
+            );
+            idx += offset;
+        }
     }
+}
+
+export function parseTagsToCondition(tags: string[], department: Department) {
+    return tags.reduce((acc, cur, idx) => {
+        let operator = '|| ';
+        if (idx === tags.length - 1) operator = '';
+        return `${acc} '${encodeTag(cur, department)}' in topics ${operator}`.trim();
+    }, '');
 }
 
 export async function getOrCreateTags(tags: string[], notice: Notice, department: Department): Promise<void> {
@@ -102,4 +115,14 @@ export async function addDepartmentProperty(department: Department, crawler: Cra
     department.link = crawler.departmentLink;
     department.style = crawler.style;
     await Department.save(department);
+}
+
+function encodeTag(tag: string, department: Department) {
+    const rawTopic = `${department.name}/${tag}`;
+    const replacement: StringKey = { '+': '-', '/': '_', '=': '%' };
+    return Buffer.from(rawTopic)
+        .toString('base64')
+        .replace(/[+/=]/g, (str) => {
+            return replacement[str];
+        });
 }

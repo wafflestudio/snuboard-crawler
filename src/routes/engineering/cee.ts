@@ -122,6 +122,7 @@ class CEECrawler extends CategoryCrawler {
                         department: siteData.department,
                         isPinned,
                         isList: false,
+                        commonUrl: siteData.commonUrl,
                         dateString,
                     };
                     this.log.info('Enqueueing', { link });

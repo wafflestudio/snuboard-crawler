@@ -97,6 +97,7 @@ class IECrawler extends CategoryCrawler {
                     isPinned: false,
                     isList: false,
                     dateString,
+                    commonUrl: siteData.commonUrl,
                 };
                 this.log.info('Enqueueing', { link });
                 requestQueue.addRequest({

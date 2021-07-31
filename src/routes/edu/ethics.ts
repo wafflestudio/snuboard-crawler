@@ -4,7 +4,7 @@ import { RequestQueue } from 'apify';
 import { EDU, INF } from '../../constants';
 import { Crawler } from '../../classes/crawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, removeUrlPageParam, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
@@ -69,7 +69,7 @@ class EthicsCrawler extends CategoryCrawler {
             );
             const tags: string[] = [this.categoryTags[siteData.tag ?? ''] ?? '공지사항'];
 
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

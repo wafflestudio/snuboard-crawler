@@ -6,7 +6,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
 import { MedPageSummary, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
 import { MEDICINE } from '../../constants';
@@ -81,7 +81,7 @@ export class MedicineCrawler extends Crawler {
                 tags.push(siteData.tag);
             }
 
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         }
     };
 

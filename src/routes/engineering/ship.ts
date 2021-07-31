@@ -6,7 +6,7 @@ import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
 import { ENGINEERING } from '../../constants';
@@ -69,7 +69,7 @@ class ShipCrawler extends Crawler {
             const tags: string[] = [];
             const category = $('div.category a').text().trim();
             tags.push(category);
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

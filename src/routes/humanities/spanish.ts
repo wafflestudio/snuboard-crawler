@@ -4,7 +4,7 @@ import { RequestQueue } from 'apify';
 import { HUMANITIES, INF } from '../../constants';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -65,7 +65,7 @@ class SpanishCrawler extends CategoryCrawler {
             );
 
             const tags: string[] = [this.categoryTags[siteData.tag]];
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

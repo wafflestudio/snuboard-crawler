@@ -12,6 +12,7 @@
 		"cheerio": "^1.0.0-rc.3",
 		"class-transformer": "^0.3.2",
 		"dotenv": "^8.2.0",
+		"firebase-admin": "^9.11.0",
 		"mysql2": "^2.2.5",
 		"reflect-metadata": "^0.1.13",
 		"sqlite3": "^5.0.2",

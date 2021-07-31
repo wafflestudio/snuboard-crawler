@@ -4,7 +4,7 @@ import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { HUMANITIES } from '../../constants';
 import { CategoryTag, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -77,7 +77,7 @@ class ReligionCrawler extends CategoryCrawler {
                 tags.push(this.categoryTags[category]);
             }
             tags = tags.filter((tag) => tag !== this.excludedTag);
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

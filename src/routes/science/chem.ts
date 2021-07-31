@@ -4,7 +4,7 @@ import { URL } from 'url';
 import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTags, saveNotice } from '../../utils';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { INF, SCIENCE } from '../../constants';
@@ -77,7 +77,7 @@ class ChemCrawler extends CategoryCrawler {
             const cate = url.split('/')[4].split('?')[0];
             tags.push(this.categoryTags[cate]);
 
-            await getOrCreateTags(tags, notice, siteData.department);
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
         } else {
             throw new TypeError('Selector is undefined');
         }

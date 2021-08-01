@@ -86,7 +86,7 @@ class EthicsCrawler extends CategoryCrawler {
             const pageString = urlInstance.searchParams.get('page') ?? '1';
             const page: number = +pageString;
 
-            $('table.board_re').each((index, element) => {
+            $('table.board_re, table.board').each((index, element) => {
                 const noticeNum = $(element).find('tr td:nth-child(1)').text().trim();
                 const isPinned = noticeNum === '';
 

@@ -126,12 +126,16 @@ class ShipCrawler extends Crawler {
                     isPinned: false,
                     isList: true,
                     dateString: '',
+                    commonUrl: siteData.commonUrl,
                 };
-
-                await requestQueue.addRequest({
-                    url: nextListInstance.href,
-                    userData: nextListSiteData,
-                });
+                await this.addVaryingRequest(
+                    requestQueue,
+                    {
+                        url: nextListInstance.href,
+                        userData: nextListSiteData,
+                    },
+                    nextListSiteData.commonUrl,
+                );
             }
         } else {
             throw new TypeError('Selector is undefined');
@@ -142,6 +146,6 @@ class ShipCrawler extends Crawler {
 export const ship = new ShipCrawler({
     departmentName: '조선해양공학과',
     departmentCode: 'ship', // this value must be equal to the filename,
-    baseUrl: 'http://ship.snu.ac.kr/index.php?mid=Notice',
+    baseUrl: 'https://ship.snu.ac.kr/index.php?mid=Notice',
     departmentCollege: ENGINEERING,
 });

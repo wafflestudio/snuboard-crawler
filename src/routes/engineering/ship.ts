@@ -146,6 +146,6 @@ class ShipCrawler extends Crawler {
 export const ship = new ShipCrawler({
     departmentName: '조선해양공학과',
     departmentCode: 'ship', // this value must be equal to the filename,
-    baseUrl: 'https://ship.snu.ac.kr/index.php?mid=Notice',
+    baseUrl: 'http://ship.snu.ac.kr/index.php?mid=Notice',
     departmentCollege: ENGINEERING,
 });

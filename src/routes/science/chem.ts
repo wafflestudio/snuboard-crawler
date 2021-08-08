@@ -31,7 +31,7 @@ class ChemCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
-            let title = $('h1.bbstitle').text().trim();
+            let title = $('h1.bbstitle').text().trim().slice(0, 255);
             if (siteData.tag) {
                 title = title.substr(title.indexOf(']') + 1).trim();
             }

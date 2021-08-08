@@ -51,6 +51,7 @@ export async function sendMessageIfCreated(tags: string[], notice: Notice, depar
                 parseTagsToCondition(tags.slice(idx, idx + offset), department),
                 notice,
                 department,
+                tags,
             );
             idx += offset;
         }
@@ -62,6 +63,13 @@ export function parseTagsToCondition(tags: string[], department: Department) {
         let operator = '|| ';
         if (idx === tags.length - 1) operator = '';
         return `${acc} '${encodeTag(cur, department)}' in topics ${operator}`.trim();
+    }, '');
+}
+
+export function parseTagsToStringWithSeparator(tags: string[], separator: string) {
+    return tags.reduce((acc, cur, idx) => {
+        if (idx === tags.length - 1) separator = '';
+        return `${acc}${cur}${separator}`;
     }, '');
 }
 

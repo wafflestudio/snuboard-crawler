@@ -21,6 +21,7 @@ export async function sendNoticeCreationMessage(
             body: notice.title,
             noticeId: `${notice.id}`,
             departmentName: department.name,
+            departmentId: `${department.id}`,
             preview: notice.contentText.slice(0, previewLength),
             tags: parseTagsToStringWithSeparator(tags, ';'),
         },

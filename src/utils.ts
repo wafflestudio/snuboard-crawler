@@ -82,6 +82,17 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
             await getOrCreate(NoticeTag, { notice, tag });
         }),
     );
+
+    const noticeTags = await NoticeTag.find({
+        where: [{ notice }],
+        relations: ['notice', 'tag'],
+    });
+
+    const tagsWithLastX = noticeTags.map((noticeTag) => {
+        return `${noticeTag.tag.id}x`;
+    });
+    notice.tagIds = `${parseTagsToStringWithSeparator(tagsWithLastX, ' ')} `;
+    await Notice.save(notice);
 }
 
 export async function saveNotice(notice: Notice): Promise<Notice> {

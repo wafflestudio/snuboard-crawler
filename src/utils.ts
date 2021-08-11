@@ -79,7 +79,7 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
     await Promise.all(
         tags.map(async (tagName) => {
             const tag = await getOrCreate(Tag, { department, name: tagName });
-            await getOrCreate(NoticeTag, { notice, tag });
+            await getOrCreate(NoticeTag, { notice, tag, noticeCreatedAt: notice.createdAt });
         }),
     );
 }

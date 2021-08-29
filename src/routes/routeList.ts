@@ -65,6 +65,7 @@ import { english } from './humanities/english';
 import { russian } from './humanities/russian';
 import { spanish } from './humanities/spanish';
 import { medicine } from './medicine/medicine';
+import { oia } from './etc/oia';
 
 export const crawlerList: Crawler[] = [
     cse,
@@ -132,5 +133,6 @@ export const crawlerList: Crawler[] = [
     russian,
     spanish,
     medicine,
+    oia,
 ];
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

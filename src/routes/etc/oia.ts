@@ -7,7 +7,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
 import { CategoryTag, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
 import { ETC } from '../../constants';
@@ -23,6 +23,7 @@ class OIACrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const title = $('#bltnTitle').text().trim();
             notice.title = title;
             const contentElement = $('#print > table.table_type01.view > tbody > tr:nth-child(1) > td');

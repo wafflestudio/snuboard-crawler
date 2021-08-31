@@ -6,7 +6,7 @@ import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
 import { ENGINEERING } from '../../constants';
@@ -27,6 +27,7 @@ class ShipCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('div.title h1 a').text().trim();
             const contentElement = $('div.xe_content');
             let content = contentElement.html() ?? '';

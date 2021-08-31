@@ -7,7 +7,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
 import { HUMANITIES } from '../../constants';
@@ -30,6 +30,7 @@ class LinguistCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const title = $('table.board tbody tr.thead td div#tdtitle').text();
             let titleText = title;
             const tags = [];

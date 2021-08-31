@@ -6,7 +6,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
 import { MedPageSummary, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
 import { MEDICINE } from '../../constants';
@@ -36,6 +36,7 @@ export class MedicineCrawler extends Crawler {
 
             const notice = await getOrCreate(Notice, { link: url }, false);
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
 
             notice.title = $('span.subject span.ellipsis2').text().trim();
 

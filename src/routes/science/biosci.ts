@@ -3,7 +3,7 @@ import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
 import { SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
@@ -27,6 +27,7 @@ export class BiosciCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const tagTitle = $('h1.bbstitle').text().trim();
             notice.title = tagTitle.startsWith('[') ? tagTitle.substring(tagTitle.indexOf(']') + 1).trim() : tagTitle;
 

@@ -4,7 +4,14 @@ import { RequestQueue } from 'apify';
 import { Crawler } from '../../classes/crawler';
 import { EDU, INF } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    removeUrlPageParam,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
@@ -32,6 +39,7 @@ export class SocialEduCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('span.bbs_subject_css').text().trim();
             const contentElement = $('div.bbs_view_middle');
             let content = contentElement.html() ?? '';

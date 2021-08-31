@@ -7,7 +7,14 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, parseTitle, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    parseTitle,
+    saveNotice,
+} from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
 import { SOCIAL } from '../../constants';
@@ -32,6 +39,7 @@ export class GeogCrawler extends CategoryCrawler {
 
             const notice = await getOrCreate(Notice, { link: url }, false);
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
 
             // find category in stat.snu.ac.kr & geog.snu.ac.kr
             notice.title = $('div.board_view_header strong.tit').text().trim();

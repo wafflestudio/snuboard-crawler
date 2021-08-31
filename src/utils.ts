@@ -120,14 +120,14 @@ export function parseTitle(titleText: string): TitleAndTags {
     return { title, tags };
 }
 
+export function departmentCode(departmentName: string) {
+    return Buffer.from(departmentName).toString('base64').replace('+', 'Xx').replace('=', 'Yy').replace('/', 'Zz');
+}
+
 export async function addDepartmentProperty(department: Department, crawler: Crawler) {
     department.link = crawler.departmentLink;
     department.style = crawler.style;
-    department.code = Buffer.from(crawler.departmentName)
-        .toString('base64')
-        .replace('+', 'Xx')
-        .replace('=', 'Yy')
-        .replace('/', 'Zz');
+    department.code = departmentCode(crawler.departmentName);
     await Department.save(department);
 }
 

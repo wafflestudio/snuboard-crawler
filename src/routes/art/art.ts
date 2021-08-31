@@ -10,6 +10,7 @@ import { CrawlerOption, SiteData, TitleAndTags } from '../../types/custom-types'
 import {
     absoluteLink,
     addDepartmentProperty,
+    departmentCode,
     getOrCreate,
     getOrCreateTagsWithMessage,
     parseTitle,
@@ -38,6 +39,7 @@ class ArtCrawler extends CategoryCrawler {
 
             const titleTag = parseTitle($('h1.article-title').text().trim());
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = titleTag.title;
             const contentElement = $('div.entry-content');
             let content = contentElement.html() ?? '';

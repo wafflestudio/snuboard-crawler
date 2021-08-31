@@ -7,7 +7,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
 import { SOCIAL } from '../../constants';
@@ -31,6 +31,7 @@ class IRCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
 
             notice.title = $('table.write-table th:contains("제목")').siblings('td').text().trim();
             const contentElement = $('table.write-table tr:nth-child(10)').children('td');

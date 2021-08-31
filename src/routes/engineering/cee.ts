@@ -7,7 +7,14 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, parseTitle, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    parseTitle,
+    saveNotice,
+} from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
 import { ENGINEERING } from '../../constants';
@@ -31,6 +38,7 @@ class CEECrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
 
             const titleText = $('div.bo_view').children('div.bo_view_1').children('div').text().trim();
             const category = new URL(url).searchParams.get('bo_table') ?? ''; // url.replace(BaseUrl, '').split('?')[0];

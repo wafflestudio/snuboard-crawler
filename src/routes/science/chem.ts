@@ -4,7 +4,7 @@ import { URL } from 'url';
 import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { INF, SCIENCE } from '../../constants';
@@ -31,6 +31,7 @@ class ChemCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             let title = $('h1.bbstitle').text().trim().slice(0, 255);
             if (siteData.tag) {
                 title = title.substr(title.indexOf(']') + 1).trim();

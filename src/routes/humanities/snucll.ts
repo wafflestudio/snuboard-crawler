@@ -4,7 +4,14 @@ import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { HUMANITIES } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, parseTitle, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    parseTitle,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -34,6 +41,7 @@ class SnucllCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('tr.headertr').first().text().trim();
             const contentElement = $('div.viewbox');
             let content = contentElement.html() ?? '';

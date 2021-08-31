@@ -5,7 +5,14 @@ import { URL } from 'url';
 import { HUMANITIES, INF } from '../../constants';
 import { Crawler } from '../../classes/crawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, parseTitle, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    parseTitle,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -30,6 +37,7 @@ class SnuFranceCrawler extends Crawler {
 
             const notice = await getOrCreate(Notice, { link: url }, false);
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
 
             // find category in stat.snu.ac.kr & geog.snu.ac.kr
             notice.title = $('div.title').text().trim();

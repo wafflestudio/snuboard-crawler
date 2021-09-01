@@ -7,7 +7,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
 import { CategoryCrawlerInit, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { ENGINEERING } from '../../constants';
@@ -37,6 +37,7 @@ class EECrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const title = $('div#bbs-view-wrap').children('h1').text();
             notice.title = title;
             const contentElement = $('div.cnt');

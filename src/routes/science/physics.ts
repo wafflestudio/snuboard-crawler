@@ -4,7 +4,7 @@ import { RequestQueue } from 'apify';
 import { Crawler } from '../../classes/crawler';
 import { INF, SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -27,6 +27,7 @@ class PhysicsCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('h1.bbstitle').text().trim();
             const contentElement = $('div.fixwidth.bbs_contents');
 

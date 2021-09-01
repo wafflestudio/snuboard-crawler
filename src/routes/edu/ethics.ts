@@ -4,7 +4,14 @@ import { RequestQueue } from 'apify';
 import { EDU, INF } from '../../constants';
 import { Crawler } from '../../classes/crawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    removeUrlPageParam,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
@@ -32,6 +39,7 @@ class EthicsCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('div.bbs_view_top').find('strong').text().trim();
             const contentElement = $('div.bbs_view_middle');
             let content = contentElement.html() ?? '';

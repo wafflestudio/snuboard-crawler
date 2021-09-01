@@ -4,7 +4,14 @@ import { RequestQueue } from 'apify';
 import { Crawler } from '../../classes/crawler';
 import { HUMANITIES, INF } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    removeUrlPageParam,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -29,6 +36,7 @@ class ArchaeologyArtHistoryCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const noticeElement = $('table.noticeView tbody tr');
             notice.title = noticeElement.find('tr:nth-child(1) th').text().trim();
             const contentElement = noticeElement.find('td.viewTxt');

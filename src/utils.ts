@@ -1,5 +1,6 @@
 import { EntityTarget, getConnection, getRepository } from 'typeorm';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
+import { Buffer } from 'buffer';
 import { Notice } from '../server/src/notice/notice.entity';
 import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
 import { StringKey, TitleAndTags } from './types/custom-types';
@@ -119,9 +120,14 @@ export function parseTitle(titleText: string): TitleAndTags {
     return { title, tags };
 }
 
+export function departmentCode(departmentName: string) {
+    return Buffer.from(departmentName).toString('base64').replace('+', 'Xx').replace('=', 'Yy').replace('/', 'Zz');
+}
+
 export async function addDepartmentProperty(department: Department, crawler: Crawler) {
     department.link = crawler.departmentLink;
     department.style = crawler.style;
+    department.code = departmentCode(crawler.departmentName);
     await Department.save(department);
 }
 

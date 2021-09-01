@@ -3,7 +3,14 @@ import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
 import { SCIENCE } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    removeUrlPageParam,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { Crawler } from '../../classes/crawler';
@@ -24,6 +31,7 @@ class MathCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('div.top_area h1 a').text().trim();
             const contentElement = $('div.rd_body div.xe_content');
             const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';

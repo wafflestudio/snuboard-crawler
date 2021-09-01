@@ -4,7 +4,7 @@ import { RequestQueue } from 'apify';
 import { HUMANITIES, INF } from '../../constants';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -31,6 +31,7 @@ class SpanishCrawler extends CategoryCrawler {
             if (siteData.tag === undefined) return;
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const noticeElement = $('table.table_basic');
             notice.title = noticeElement.find('tbody tr:nth-child(1) td').text().trim();
             const contentElement = $('td.note_view_textarea');

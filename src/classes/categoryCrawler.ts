@@ -6,7 +6,14 @@ import { Connection } from 'typeorm';
 import assert from 'assert';
 import { strptime } from '../micro-strptime';
 import { File, Notice } from '../../server/src/notice/notice.entity';
-import { absoluteLink, addDepartmentProperty, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../utils';
+import {
+    absoluteLink,
+    addDepartmentProperty,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    saveNotice,
+} from '../utils';
 import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import { Crawler } from './crawler';
 import { Department } from '../../server/src/department/department.entity';
@@ -43,6 +50,7 @@ export class CategoryCrawler extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('dl.cHeader dt').text().trim();
             const contentElement = $('div.postArea');
             let content = contentElement.html() ?? '';

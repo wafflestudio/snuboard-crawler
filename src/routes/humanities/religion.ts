@@ -4,7 +4,7 @@ import { RequestQueue } from 'apify';
 import { CategoryCrawler } from '../../classes/categoryCrawler';
 import { HUMANITIES } from '../../constants';
 import { CategoryTag, SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -38,6 +38,7 @@ class ReligionCrawler extends CategoryCrawler {
             const idCss = this.categoryId[siteData.tag];
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $(`tr#mb_${idCss}_tr_title td span:nth-child(1)`).text().trim();
             const contentElement = $(`tr#mb_${idCss}_tr_content td`);
             let content = contentElement.html() ?? '';

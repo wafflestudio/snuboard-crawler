@@ -3,7 +3,14 @@ import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
 import { Crawler } from '../../classes/crawler';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
+import {
+    absoluteLink,
+    departmentCode,
+    getOrCreate,
+    getOrCreateTagsWithMessage,
+    removeUrlPageParam,
+    saveNotice,
+} from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 import { HUMANITIES, INF } from '../../constants';
@@ -31,6 +38,7 @@ export class PhilosophyCralwer extends Crawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const noticeElement = $('table.view tbody');
             notice.title = noticeElement.find('tr th.view_subj').text().trim();
             const contentElement = noticeElement.find('td.vie_txt');

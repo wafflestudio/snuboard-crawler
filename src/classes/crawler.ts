@@ -19,7 +19,7 @@ import {
 } from '../database';
 
 export abstract class Crawler {
-    protected readonly departmentName: string;
+    public readonly departmentName: string;
 
     public readonly departmentCode: string;
 

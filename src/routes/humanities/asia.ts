@@ -4,7 +4,7 @@ import { load } from 'cheerio';
 import { URL } from 'url';
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
 import { HUMANITIES } from '../../constants';
@@ -24,6 +24,7 @@ class AsiaCrawler extends CategoryCrawler {
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
+            notice.departmentCode = departmentCode(siteData.department.name);
             const title = $('div.board_total header h1#bo_v_title').text().trim();
             notice.title = title.substr(title.indexOf('|') + 1).trim();
 

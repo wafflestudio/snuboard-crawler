@@ -2,16 +2,16 @@ import 'reflect-metadata';
 import * as Apify from 'apify';
 import yargs from 'yargs';
 import { createDBConnection } from './database.js';
-import { crawlerList } from './routes/routeList';
 import { createOctokit } from './github';
 import { Crawler } from './classes/crawler';
 import { CategoryCrawler } from './classes/categoryCrawler.js';
+import { earlyStopList } from './routes/routeList';
 
 const {
     utils: { log },
 } = Apify;
 const crawlers: { [key: string]: Crawler } = {};
-crawlerList.map((c) => {
+earlyStopList.map((c) => {
     crawlers[c.departmentCode] = c;
 });
 

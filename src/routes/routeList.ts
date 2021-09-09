@@ -67,8 +67,10 @@ import { spanish } from './humanities/spanish';
 import { medicine } from './medicine/medicine';
 import { oia } from './etc/oia';
 import { liberaledu } from './etc/liberaledu';
+import { sociology } from './social/sociology';
+import { TRUE_STRING } from '../constants';
 
-export const crawlerList: Crawler[] = [
+export const earlyStopList: Crawler[] = [
     cse,
     ee,
     cbe,
@@ -136,5 +138,12 @@ export const crawlerList: Crawler[] = [
     medicine,
     oia,
     liberaledu,
+    sociology,
 ];
+
+const populationList = [sociology];
+
+const POPULATION = TRUE_STRING.includes(process.env.POPULATION ?? '');
+const crawlerList = POPULATION ? populationList : earlyStopList;
+
 export const routeList: ((connection: Connection) => Promise<void>)[] = crawlerList.map((cr) => cr.startCrawl);

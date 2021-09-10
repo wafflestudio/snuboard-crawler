@@ -4,6 +4,8 @@ import { fbConfig } from './fbconfig';
 import { Department } from '../server/src/department/department.entity';
 import { Notice } from '../server/src/notice/notice.entity';
 import { parseTagsToStringWithSeparator } from './utils';
+import { messaging } from 'firebase-admin';
+import MessagingOptions = messaging.MessagingOptions;
 
 admin.initializeApp({ credential: admin.credential.cert(fbConfig) });
 
@@ -15,7 +17,7 @@ export async function sendNoticeCreationMessage(
 ) {
     const previewLength = 250;
 
-    const message = {
+    const payload = {
         data: {
             title: `${department.name} 신규 공지사항입니다`,
             body: notice.title,
@@ -25,7 +27,10 @@ export async function sendNoticeCreationMessage(
             preview: notice.contentText.slice(0, previewLength),
             tags: parseTagsToStringWithSeparator(tags, ';'),
         },
-        condition,
     };
-    await admin.messaging().send(message);
+    const options: MessagingOptions = {
+        contentAvailable: true,
+    };
+
+    await admin.messaging().sendToCondition(condition, payload, options);
 }

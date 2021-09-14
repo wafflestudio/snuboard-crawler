@@ -42,8 +42,11 @@ class MSECrawler extends CategoryCrawler {
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
-            notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
-
+            const dateString = $('div.g_head')
+                .html()
+                ?.match(/[0-9]{4}-[0-9]{2}-[0-9]{2}/g)?.[0];
+            if (!dateString) return;
+            notice.createdAt = strptime(dateString, '%Y-%m-%d');
             notice.isPinned = siteData.isPinned;
             notice.link = url;
 
@@ -101,15 +104,12 @@ class MSECrawler extends CategoryCrawler {
                 const nextLinkUrlInstance = new URL(link);
                 nextLinkUrlInstance.searchParams.delete('pg');
                 link = nextLinkUrlInstance.href;
-                const dateString = $(element)
-                    .html()
-                    ?.match(/[0-9]{4}.[0-9]{2}.[0-9]{2}/g)?.[0];
-                if (!dateString) return;
+                const isPinned = $(element).attr('class') === 'notice';
                 const newSiteData: SiteData = {
                     department: siteData.department,
-                    isPinned: false,
+                    isPinned,
                     isList: false,
-                    dateString,
+                    dateString: '',
                     commonUrl: siteData.commonUrl,
                     tag: siteData.tag,
                 };

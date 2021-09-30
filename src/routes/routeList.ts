@@ -71,6 +71,8 @@ import { sociology } from './social/sociology';
 import { TRUE_STRING } from '../constants';
 import { easia } from './union/easia';
 import { isc } from './union/isc';
+import { ssai } from './union/ssai';
+import { ect } from './union/ect';
 
 export const earlyStopList: Crawler[] = [
     cse,
@@ -143,9 +145,11 @@ export const earlyStopList: Crawler[] = [
     sociology,
     easia,
     isc,
+    ssai,
+    ect,
 ];
 
-const populationList = [easia, isc];
+const populationList = [easia, isc, ssai, ect];
 
 const POPULATION = TRUE_STRING.includes(process.env.POPULATION ?? '');
 const crawlerList = POPULATION ? populationList : earlyStopList;

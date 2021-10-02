@@ -74,6 +74,7 @@ import { isc } from './union/isc';
 import { ssai } from './union/ssai';
 import { ect } from './union/ect';
 import { mediaart } from './union/mediaart';
+import { imai } from './union/imai';
 
 export const earlyStopList: Crawler[] = [
     cse,
@@ -149,6 +150,7 @@ export const earlyStopList: Crawler[] = [
     ssai,
     ect,
     mediaart,
+    imai,
 ];
 
 const populationList = [easia, isc, ssai, ect];

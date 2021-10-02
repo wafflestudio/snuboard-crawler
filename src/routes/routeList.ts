@@ -73,7 +73,7 @@ import { easia } from './union/easia';
 import { isc } from './union/isc';
 import { ssai } from './union/ssai';
 import { ect } from './union/ect';
-import { mediaart } from './art/mediaart';
+import { mediaart } from './union/mediaart';
 
 export const earlyStopList: Crawler[] = [
     cse,

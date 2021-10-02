@@ -229,7 +229,7 @@ export const art = new ArtCrawler({
     departmentCollege: ART,
     baseUrl: 'http://art.snu.ac.kr/',
     categoryTags: {
-        // 'category/college-of-fine-arts': '뉴스',
+        'category/college-of-fine-arts': '뉴스',
         notice: '공지사항',
     },
 });

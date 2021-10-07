@@ -127,7 +127,9 @@ class ArtCrawler extends CategoryCrawler {
             });
 
             if (siteData.tag === undefined) return;
-            const nextList = `http://art.snu.ac.kr/${siteData.tag}/page/${page + 1}/?catemenu=News&type=Events`;
+            const nextList = `http://art.snu.ac.kr/${siteData.tag}/page/${page + 1}/?catemenu=${
+                siteData.tag === 'notice' ? 'Notice' : 'News'
+            }&type=Events`;
             if ($('a.nextpostslink').length !== 0) {
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {

@@ -2,7 +2,7 @@ import { GeogCrawler } from '../social/geog';
 import { UNION } from '../../constants';
 
 export const imai = new GeogCrawler({
-    departmentName: '연합전공 인공지능',
+    departmentName: '인공지능',
     departmentCode: 'imai',
     departmentCollege: UNION,
     baseUrl: 'https://imai.snu.ac.kr/category/',

@@ -153,7 +153,7 @@ export const earlyStopList: Crawler[] = [
     imai,
 ];
 
-const populationList = [easia, isc, ssai, ect];
+const populationList = [easia, isc, ssai, ect, mediaart, imai];
 
 const POPULATION = TRUE_STRING.includes(process.env.POPULATION ?? '');
 const crawlerList = POPULATION ? populationList : earlyStopList;

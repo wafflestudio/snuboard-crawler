@@ -69,6 +69,12 @@ import { oia } from './etc/oia';
 import { liberaledu } from './etc/liberaledu';
 import { sociology } from './social/sociology';
 import { TRUE_STRING } from '../constants';
+import { easia } from './union/easia';
+import { isc } from './union/isc';
+import { ssai } from './union/ssai';
+import { ect } from './union/ect';
+import { mediaart } from './union/mediaart';
+import { imai } from './union/imai';
 
 export const earlyStopList: Crawler[] = [
     cse,
@@ -139,9 +145,15 @@ export const earlyStopList: Crawler[] = [
     oia,
     liberaledu,
     sociology,
+    easia,
+    isc,
+    ssai,
+    ect,
+    mediaart,
+    imai,
 ];
 
-const populationList = [sociology];
+const populationList = [easia, isc, ssai, ect, mediaart, imai];
 
 const POPULATION = TRUE_STRING.includes(process.env.POPULATION ?? '');
 const crawlerList = POPULATION ? populationList : earlyStopList;

@@ -75,6 +75,11 @@ import { ssai } from './union/ssai';
 import { ect } from './union/ect';
 import { mediaart } from './union/mediaart';
 import { imai } from './union/imai';
+import { craft } from './art/craft';
+import { orientalpainting } from './art/orientalpainting';
+import { painting } from './art/painting';
+import { sculpture } from './art/sculpture';
+import { design } from './art/design';
 
 export const earlyStopList: Crawler[] = [
     cse,
@@ -151,6 +156,11 @@ export const earlyStopList: Crawler[] = [
     ect,
     mediaart,
     imai,
+    orientalpainting,
+    painting,
+    sculpture,
+    craft,
+    design,
 ];
 
 const populationList = [art];

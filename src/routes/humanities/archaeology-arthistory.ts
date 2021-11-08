@@ -4,14 +4,7 @@ import { RequestQueue } from 'apify';
 import { Crawler } from '../../classes/crawler';
 import { HUMANITIES, INF } from '../../constants';
 import { SiteData } from '../../types/custom-types';
-import {
-    absoluteLink,
-    departmentCode,
-    getOrCreate,
-    getOrCreateTagsWithMessage,
-    removeUrlPageParam,
-    saveNotice,
-} from '../../utils';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
 import { File, Notice } from '../../../server/src/notice/notice.entity';
 import { strptime } from '../../micro-strptime';
 
@@ -147,5 +140,5 @@ export const archaeologyArthistory = new ArchaeologyArtHistoryCrawler({
     departmentCode: 'archaeology-arthistory', // this value must be equal to the filename
     departmentCollege: HUMANITIES,
     baseUrl: 'http://www.archaeology-arthistory.or.kr/?c=user&mcd=sad0001&cur_page=1',
-    departmentLink: 'archaeology-arthistory.or.kr',
+    departmentLink: 'http://www.archaeology-arthistory.or.kr',
 });

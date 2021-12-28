@@ -163,7 +163,7 @@ export const earlyStopList: Crawler[] = [
     design,
 ];
 
-const populationList = [orientalpainting, painting, sculpture, craft, design, sociology];
+const populationList: Crawler[] = [];
 
 const POPULATION = TRUE_STRING.includes(process.env.POPULATION ?? '');
 const crawlerList = POPULATION ? populationList : earlyStopList;

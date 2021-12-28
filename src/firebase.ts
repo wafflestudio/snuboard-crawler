@@ -4,8 +4,6 @@ import { fbConfig } from './fbconfig';
 import { Department } from '../server/src/department/department.entity';
 import { Notice } from '../server/src/notice/notice.entity';
 import { parseTagsToStringWithSeparator } from './utils';
-// import MessagingOptions = messaging.MessagingOptions;
-// import TokenMessage = messaging.TokenMessage;
 
 admin.initializeApp({ credential: admin.credential.cert(fbConfig) });
 

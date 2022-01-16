@@ -46,7 +46,7 @@
 		"hosted-git-info": ">=2.8.9",
 		"lodash": ">=4.17.21",
 		"underscore": ">=1.12.1",
-		"marked": ">=2.0.0"
+		"marked": ">=4.0.10"
 	},
 	"scripts": {
 		"prestart": "npm run build",

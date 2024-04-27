@@ -145,7 +145,7 @@ export const earlyStopList: Crawler[] = [
     snuFrance,
     english,
     russian,
-    spanish,
+    // spanish,
     medicine,
     oia,
     liberaledu,

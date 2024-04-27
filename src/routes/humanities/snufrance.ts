@@ -100,11 +100,18 @@ class SnuFranceCrawler extends Crawler {
                 const titleElement = $(element).find('td:nth-child(2) a');
                 const idx = titleElement.attr('onclick')?.replace(/[^0-9]/g, '');
                 if (idx === undefined) return;
+                const formElement = $('form[name="viewForm"]');
                 const nextUrl = new URL(request.loadedUrl);
                 if (nextUrl === undefined) return;
-                nextUrl.searchParams.set('mode', 'view');
-                nextUrl.searchParams.delete('curpage');
                 nextUrl.searchParams.set('idx', idx);
+                formElement.children('input').each((index2, element2) => {
+                    const elem = $(element2);
+                    const name = elem.attr('name');
+                    if (name === undefined) return;
+                    if (name === 'idx') return;
+                    nextUrl.searchParams.set(name, elem.attr('value') || '');
+                });
+                nextUrl.searchParams.delete('curpage');
                 const dateString = $(element).find('td:nth-child(3)').text().trim();
                 const link = nextUrl.href;
                 const newSiteData: SiteData = {
@@ -155,7 +162,6 @@ export const snuFrance = new SnuFranceCrawler({
     departmentName: '불어불문학과',
     departmentCode: 'snufrance',
     departmentCollege: HUMANITIES,
-    departmentLink: 'http://snufrance.com/home/main/index.asp',
-    baseUrl:
-        'http://www.snufrance.com/home/opsquare/notice.asp?gubun=SNUFR&board_cd=NOTICE&strOpt=&searchField=&searchWord=&curpage=1',
+    departmentLink: 'https://snufrance.com/home/main/index.asp',
+    baseUrl: 'https://www.snufrance.com/home/opsquare/notice.asp',
 });

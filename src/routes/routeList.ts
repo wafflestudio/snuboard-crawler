@@ -82,13 +82,13 @@ import { sculpture } from './art/sculpture';
 import { design } from './art/design';
 
 export const earlyStopList: Crawler[] = [
-    cse,
+    // cse,
     ee,
     cbe,
     ere,
     me,
     ie,
-    ship,
+    // ship,
     cee,
     architecture,
     mse,

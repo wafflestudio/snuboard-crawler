@@ -16,7 +16,9 @@ export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPa
     let element: T | undefined = await repository.findOne(entityLike);
     if (element === undefined) {
         element = repository.create(entityLike);
-        if (save) await repository.save(element);
+        if (save) {
+            await repository.save(element as DeepPartial<T>);
+        }
     }
     return element;
 }

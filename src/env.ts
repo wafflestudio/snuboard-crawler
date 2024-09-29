@@ -1,5 +1,6 @@
-import { config } from 'dotenv';
 import path from 'path';
+
+import { config } from 'dotenv';
 
 export const ENV: string = process.env.NODE_ENV ?? 'dev';
 let envFile: string;

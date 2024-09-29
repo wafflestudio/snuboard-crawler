@@ -1,25 +1,29 @@
 import 'reflect-metadata';
-import * as Apify from 'apify';
-import { Promise } from 'bluebird';
-import { createDBConnection } from './database.js';
-import { routeList } from './routes/routeList';
-import { createOctokit } from './github';
+import { Actor } from 'apify';
+import Promise from 'bluebird';
+import { data } from 'cheerio/dist/commonjs/api/attributes.js';
+import { utils } from 'crawlee';
 
-const {
-    utils: { log },
-} = Apify;
+import { getDataSource } from './database.js';
+import { createOctokit } from './github.js';
+import { routeList } from './routes/routeList.js';
+import { ApifyStorageLocal } from '@apify/storage-local';
 
-Apify.main(async () => {
-    const connection = await createDBConnection();
+const { log } = utils;
+
+const storage = new ApifyStorageLocal();
+await Actor.init({ storage });
+await Actor.main(async () => {
     await createOctokit();
     log.info('Starting the crawl.');
     await Promise.map(
         routeList,
         async (startCrawl) => {
-            await startCrawl(connection);
+            await startCrawl(await getDataSource());
         },
         { concurrency: +(process.env.MAX_CONCURRENCY ?? '10') },
     );
     log.info('Crawl finished.');
-    await connection.close();
+    await (await getDataSource()).destroy();
 });
+await Actor.exit();

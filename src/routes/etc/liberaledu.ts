@@ -1,8 +1,8 @@
 // filename must equal to first level of url domain.
 // e.g. liberaledu.snu.ac.kr -> liberaledu.ts
 
-import { ETC } from '../../constants';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { ETC } from '../../constants.js';
 
 export const liberaledu = new CategoryCrawler({
     departmentName: '기초교육원',

@@ -1,11 +1,16 @@
 // filename must equal to first level of url domain.
 // e.g. geog.snu.ac.kr -> geog.ts
 
-import { RequestQueue } from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { URL } from 'url';
+
+import { RequestQueue } from 'apify';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { SOCIAL } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
 import {
     absoluteLink,
@@ -14,13 +19,10 @@ import {
     getOrCreateTagsWithMessage,
     parseTitle,
     saveNotice,
-} from '../../utils';
-import { strptime } from '../../micro-strptime';
-import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { SOCIAL } from '../../constants';
+} from '../../utils.js';
 
 export class GeogCrawler extends CategoryCrawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -45,7 +47,12 @@ export class GeogCrawler extends CategoryCrawler {
             notice.title = $('div.board_view_header strong.tit').text().trim();
 
             const contentElement = $('div.board_view_content');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -59,7 +66,7 @@ export class GeogCrawler extends CategoryCrawler {
                 // const fileUrlRe = /download_file\('SINGLE', '(.*)\)/;
                 // const fileUrl = $(element).attr('onclick')?.match(fileUrlRe);
                 const file = new File();
-                // eslint-disable-next-line prefer-destructuring
+
                 file.name = $(element).text().trim();
                 file.link = url;
                 files.push(file);
@@ -92,7 +99,10 @@ export class GeogCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -112,6 +122,7 @@ export class GeogCrawler extends CategoryCrawler {
                     const noticeNum = titleElement.attr('onclick')?.match(titleRe)?.[1];
 
                     if (noticeNum === undefined) return;
+                    if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                     const nextUrl = new URL(request.loadedUrl);
                     if (nextUrl === undefined) return;
                     nextUrl.searchParams.set('board_mode', 'VIEW');
@@ -134,7 +145,7 @@ export class GeogCrawler extends CategoryCrawler {
                         userData: newSiteData,
                     });
                 });
-
+            if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
             const nextPage = +(
                 new URL(
                     absoluteLink($('div.paging a.next').attr('href'), request.loadedUrl) ?? this.baseUrl,

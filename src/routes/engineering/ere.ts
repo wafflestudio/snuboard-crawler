@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { ENGINEERING } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { ENGINEERING } from '../../constants.js';
 
 export const ere = new CategoryCrawler({
     departmentName: '에너지자원공학과',

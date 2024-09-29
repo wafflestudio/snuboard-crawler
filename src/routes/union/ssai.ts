@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { UNION } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { UNION } from '../../constants.js';
 
 export const ssai = new CategoryCrawler({
     departmentName: '인공지능반도체공학',

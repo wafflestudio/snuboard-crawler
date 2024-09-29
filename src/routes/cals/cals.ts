@@ -1,5 +1,5 @@
-import { BiosciCrawler } from '../science/biosci';
-import { CALS } from '../../constants';
+import { CALS } from '../../constants.js';
+import { BiosciCrawler } from '../science/biosci.js';
 
 export const cals = new BiosciCrawler({
     departmentName: '농업생명과학대학',

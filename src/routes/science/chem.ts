@@ -1,20 +1,22 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { URL } from 'url';
+
 import { RequestQueue } from 'apify';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { INF, SCIENCE } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
-import { INF, SCIENCE } from '../../constants';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class ChemCrawler extends CategoryCrawler {
     //    protected readonly encoding: string = 'EUC-KR';
 
     //    protected readonly maxRetries: number = 5;
 
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -40,7 +42,12 @@ class ChemCrawler extends CategoryCrawler {
             const contentElement = $('div.fixwidth.bbs_contents');
 
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -84,17 +91,22 @@ class ChemCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
+        if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
         const urlInstance = new URL(request.loadedUrl);
         const page = +(urlInstance.searchParams.get('page') ?? 1);
 
         if ($ !== undefined) {
             $('table.fixwidth.table-rows tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td.title a');
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const tag: string = $(element).find('td.text-center:nth-child(2)').text();

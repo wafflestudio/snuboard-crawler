@@ -1,8 +1,11 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { HUMANITIES } from '../../constants';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { HUMANITIES } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
 import {
     absoluteLink,
@@ -11,16 +14,14 @@ import {
     getOrCreateTagsWithMessage,
     parseTitle,
     saveNotice,
-} from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
+} from '../../utils.js';
 
 class SnucllCrawler extends CategoryCrawler {
     private categories = ['공지사항', '장학정보', '취업정보', '중문과 소식', '채용정보'];
 
     private tags = ['학생', '수업', '졸업', '학술', '행사', '기타', '교내', '교외', '취업', '부직'];
 
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -45,7 +46,12 @@ class SnucllCrawler extends CategoryCrawler {
             notice.title = $('tr.headertr').first().text().trim();
             const contentElement = $('div.viewbox');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -89,7 +95,7 @@ class SnucllCrawler extends CategoryCrawler {
                 }),
             );
 
-            const tags = [];
+            const tags: string[] = [];
             if (siteData.tag !== undefined && this.tags.includes(siteData.tag)) {
                 tags.push(siteData.tag);
             }
@@ -102,7 +108,10 @@ class SnucllCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;

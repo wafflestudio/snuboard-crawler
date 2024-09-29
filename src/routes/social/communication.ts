@@ -1,5 +1,5 @@
-import { GeogCrawler } from '../social/geog';
-import { SOCIAL } from '../../constants';
+import { SOCIAL } from '../../constants.js';
+import { GeogCrawler } from '../social/geog.js';
 
 export const communication = new GeogCrawler({
     departmentName: '언론정보학과',

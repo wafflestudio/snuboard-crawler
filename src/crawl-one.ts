@@ -1,21 +1,22 @@
 import 'reflect-metadata';
-import * as Apify from 'apify';
+import { Actor } from 'apify';
+import { utils } from 'crawlee';
 import yargs from 'yargs';
-import { createDBConnection } from './database.js';
-import { createOctokit } from './github';
-import { Crawler } from './classes/crawler';
-import { CategoryCrawler } from './classes/categoryCrawler.js';
-import { earlyStopList } from './routes/routeList';
 
-const {
-    utils: { log },
-} = Apify;
+import { CategoryCrawler } from './classes/categoryCrawler.js';
+import { Crawler } from './classes/crawler.js';
+import { getDataSource } from './database.js';
+import { createOctokit } from './github.js';
+import { earlyStopList } from './routes/routeList.js';
+import { ApifyStorageLocal } from '@apify/storage-local';
+
+const { log } = utils;
 const crawlers: { [key: string]: Crawler } = {};
 earlyStopList.map((c) => {
     crawlers[c.departmentCode] = c;
 });
 
-const args = yargs(process.argv.slice(2))
+const args_promise = yargs(process.argv.slice(2))
     .options({
         timeout: { type: 'number', demandOption: false },
         startUrl: { type: 'string', demandOption: false },
@@ -51,16 +52,21 @@ const args = yargs(process.argv.slice(2))
         return true;
     }).argv;
 
-Apify.main(async () => {
-    const connection = await createDBConnection();
+const storage = new ApifyStorageLocal();
+await Actor.init({
+    storage,
+});
+await Actor.main(async () => {
+    const args = await args_promise;
     // await createOctokit();
     log.info('Starting the crawl.');
-    await crawlers[args._[0]].startCrawl(connection, {
+    await crawlers[args._[0]].startCrawl(await getDataSource(), {
         timeout: args.timeout,
         startUrl: args.startUrl,
         isList: args.startUrl ? args.isList : undefined,
         tag: args.tag,
     });
     log.info('Crawl finished.');
-    await connection.close();
+    await (await getDataSource()).destroy();
 });
+await Actor.exit();

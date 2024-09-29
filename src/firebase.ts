@@ -1,13 +1,15 @@
 import * as admin from 'firebase-admin';
-
-import { fbConfig } from './fbconfig';
-import { Department } from '../server/src/department/department.entity';
-import { Notice } from '../server/src/notice/notice.entity';
-import { parseTagsToStringWithSeparator } from './utils';
 import { messaging } from 'firebase-admin';
-import MessagingOptions = messaging.MessagingOptions;
 
-admin.initializeApp({ credential: admin.credential.cert(fbConfig) });
+import { fbConfig } from '../server/src/fbconfig.js';
+import { parseTagsToStringWithSeparator } from './utils.js';
+import { Department } from '../server/src/department/department.entity.js';
+import { Notice } from '../server/src/notice/notice.entity.js';
+
+import MessagingOptions = messaging.MessagingOptions;
+import { cert, initializeApp } from 'firebase-admin/app';
+
+initializeApp({ credential: cert(fbConfig) });
 
 export async function sendNoticeCreationMessage(
     condition: string,

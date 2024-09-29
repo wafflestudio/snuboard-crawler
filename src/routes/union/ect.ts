@@ -1,19 +1,21 @@
 // filename must equal to first level of url domain.
 // e.g. cse.snu.ac.kr -> cse.ts
 
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { URL } from 'url';
+
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { UNION } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
-import { Crawler } from '../../classes/crawler';
-import { UNION } from '../../constants';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class EctCrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -31,7 +33,12 @@ class EctCrawler extends Crawler {
             notice.title = $('h1.bbstitle').text().trim();
 
             const contentElement = $('div.cnt');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -73,13 +80,14 @@ class EctCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
         if ($ !== undefined) {
             $('table.fixwidth tbody tr').each((index, element) => {
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 let link = absoluteLink($(element).find('a').attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const pageUrl = new URL(link);
@@ -100,6 +108,7 @@ class EctCrawler extends Crawler {
                 });
             });
             const endElement = $('div.pagination-01 a.direction.last').attr('href');
+            if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
             const endUrl = absoluteLink(endElement, request.loadedUrl);
             if (!endUrl) return;
             const endUrlInstance = new URL(endUrl);

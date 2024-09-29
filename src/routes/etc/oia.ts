@@ -1,19 +1,21 @@
 // filename must equal to first level of url domain.
 // e.g. oia.snu.ac.kr -> oia.ts
 
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { URL } from 'url';
+
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { ETC } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { CategoryTag, SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
-import { Crawler } from '../../classes/crawler';
-import { ETC } from '../../constants';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class OIACrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -27,7 +29,12 @@ class OIACrawler extends Crawler {
             const title = $('#bltnTitle').text().trim();
             notice.title = title;
             const contentElement = $('#print > table.table_type01.view > tbody > tr:nth-child(1) > td');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
             notice.createdAt = strptime(siteData.dateString, '%Y.%m.%d');
@@ -62,7 +69,7 @@ class OIACrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;

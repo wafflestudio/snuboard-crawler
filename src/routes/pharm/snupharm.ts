@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { PHARM } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { PHARM } from '../../constants.js';
 
 export const snuPharm = new CategoryCrawler({
     departmentName: '약학대학',

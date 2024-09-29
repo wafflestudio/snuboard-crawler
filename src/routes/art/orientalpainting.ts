@@ -1,5 +1,5 @@
-import { ArtCrawler } from '../../classes/artCrawler';
-import { ART } from '../../constants';
+import { ArtCrawler } from '../../classes/artCrawler.js';
+import { ART } from '../../constants.js';
 
 export const orientalpainting = new ArtCrawler({
     departmentName: '동양화과',

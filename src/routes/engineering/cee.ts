@@ -1,11 +1,16 @@
 // filename must equal to first level of url domain.
 // e.g. cee.snu.ac.kr -> cee.ts
 
-import { RequestQueue } from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { URL } from 'url';
+
+import { RequestQueue } from 'apify';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { ENGINEERING } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
 import {
     absoluteLink,
@@ -14,13 +19,10 @@ import {
     getOrCreateTagsWithMessage,
     parseTitle,
     saveNotice,
-} from '../../utils';
-import { strptime } from '../../micro-strptime';
-import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { ENGINEERING } from '../../constants';
+} from '../../utils.js';
 
 class CEECrawler extends CategoryCrawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -51,7 +53,12 @@ class CEECrawler extends CategoryCrawler {
             notice.title = title;
             const contentElement = $('div.bo_view').children('div.bo_view_2');
 
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -101,7 +108,10 @@ class CEECrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -118,7 +128,7 @@ class CEECrawler extends CategoryCrawler {
                     if (page > 1 && isPinned) return;
 
                     const titleElement = $(element).children('td.subject').children('nobr').children('a');
-
+                    if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                     let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                     if (link === undefined) return;
                     const pageUrl = new URL(link);
@@ -141,6 +151,7 @@ class CEECrawler extends CategoryCrawler {
                 });
 
             const endElement = $('div.board_page').find('img[title="맨끝"]').parent().attr('href');
+            if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
             const endUrl = absoluteLink(endElement, request.loadedUrl);
             if (!endUrl) return;
             const endUrlInstance = new URL(endUrl);

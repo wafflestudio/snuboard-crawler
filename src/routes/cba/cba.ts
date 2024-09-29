@@ -1,13 +1,14 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { Crawler } from '../../classes/crawler';
-import { CBA } from '../../constants';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { CBA } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
-import { BiosciCrawler } from '../science/biosci';
+import { absoluteLink, getOrCreate, getOrCreateTagsWithMessage, removeUrlPageParam, saveNotice } from '../../utils.js';
+import { BiosciCrawler } from '../science/biosci.js';
 
 export const cba = new BiosciCrawler({
     departmentName: '경영대학',

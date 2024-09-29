@@ -1,22 +1,22 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import * as Apify from 'apify';
-import { RequestQueue } from 'apify';
-import { Connection } from 'typeorm';
 import assert from 'assert';
-import Request, { RequestOptions } from 'apify/types/request';
+
+import { Actor } from 'apify';
+import { RequestQueue, Request, RequestOptions, utils, CheerioCrawler, CheerioCrawlingContext } from 'crawlee';
 import * as sqlite3 from 'sqlite3';
-import { appendIssue, createIssue } from '../github';
-import { CrawlerInit, CrawlerOption, SiteData } from '../types/custom-types';
-import { addDepartmentProperty, getOrCreate } from '../utils';
-import { Department } from '../../server/src/department/department.entity';
+import { DataSource } from 'typeorm';
+
+import { Department } from '../../server/src/department/department.entity.js';
 import {
     closeSqliteDB,
-    createRequestQueueConnection,
+    createRequestQueueDataSource,
     isBasePushCondition,
     isEarlyStopCondition,
     listCount,
     urlInQueue,
-} from '../database';
+} from '../database.js';
+import { appendIssue, createIssue } from '../github.js';
+import { CrawlerInit, CrawlerOption, SiteData } from '../types/custom-types';
+import { addDepartmentProperty, getOrCreate } from '../utils.js';
 
 export abstract class Crawler {
     public readonly departmentName: string;
@@ -55,25 +55,25 @@ export abstract class Crawler {
 
         this.maxRetries = 0;
         this.encoding = undefined;
-        this.log = Apify.utils.log.child({
+        this.log = utils.log.child({
             prefix: this.departmentName,
         });
     }
 
-    abstract handlePage(context: CheerioHandlePageInputs): Promise<void>;
+    abstract handlePage(context: CheerioCrawlingContext<SiteData, any>): Promise<void>;
 
-    abstract handleList(context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void>;
+    abstract handleList(context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void>;
 
-    startCrawl = async (connection: Connection, crawlerOption?: CrawlerOption): Promise<void> => {
-        assert(connection.isConnected);
+    startCrawl = async (dataSource: DataSource, crawlerOption?: CrawlerOption): Promise<void> => {
+        assert(dataSource.isInitialized);
         this.log.info('Starting crawl for '.concat(this.departmentName));
-        const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
+        const requestQueue = await Actor.openRequestQueue(this.departmentCode); // each queue should have different id
         const department = await getOrCreate(Department, {
             name: this.departmentName,
             college: this.departmentCollege,
         });
         await addDepartmentProperty(department, this);
-        this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
+        this.requestQueueDB = await createRequestQueueDataSource(this.departmentCode);
         // department-specific initialization urls
         const siteData: SiteData = {
             department,
@@ -113,8 +113,8 @@ export abstract class Crawler {
 
     async runCrawler(
         requestQueue: RequestQueue,
-        handlePage: (inputs: CheerioHandlePageInputs) => Promise<void>,
-        handleList: (inputs: CheerioHandlePageInputs, queue: RequestQueue) => Promise<void>,
+        handlePage: (inputs: CheerioCrawlingContext) => Promise<void>,
+        handleList: (inputs: CheerioCrawlingContext, queue: RequestQueue) => Promise<void>,
         crawlerOption?: CrawlerOption,
     ): Promise<void> {
         const timeout = crawlerOption?.timeout ?? 10;
@@ -122,18 +122,18 @@ export abstract class Crawler {
         const startTimeString = `${new Date().toLocaleString('ko-KR', {
             timeZone: 'Asia/Seoul',
         })} KST`;
-        const crawler = new Apify.CheerioCrawler({
+        const crawler = new CheerioCrawler({
             useSessionPool: false,
             requestQueue,
             maxConcurrency: 1,
             maxRequestRetries: this.maxRetries,
             forceResponseEncoding: this.encoding,
-            handlePageFunction: async (context) => {
+            requestHandler: async (context: CheerioCrawlingContext<SiteData, any>) => {
                 const handleStartTime = Date.now();
                 try {
-                    if ((<SiteData>context.request.userData).isList) await handleList(context, requestQueue);
+                    if (context.request.userData.isList) await handleList(context, requestQueue);
                     else await handlePage(context);
-                } catch (err) {
+                } catch (err: any) {
                     const errString = err.toString();
                     const issueNumber = errorIssueMapping.get(errString);
                     const errDetail = `\`\`\`\n${err.stack}\nwhile processing\n${JSON.stringify(
@@ -156,7 +156,7 @@ export abstract class Crawler {
                 } finally {
                     const handleEndTime = Date.now();
                     const adjustedTimeout = timeout * 1000 - (handleEndTime - handleStartTime);
-                    if (adjustedTimeout > 0) await Apify.utils.sleep(adjustedTimeout);
+                    if (adjustedTimeout > 0) await utils.sleep(adjustedTimeout);
                 }
             },
         });

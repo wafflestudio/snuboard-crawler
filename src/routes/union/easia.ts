@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { UNION } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { UNION } from '../../constants.js';
 
 export const easia = new CategoryCrawler({
     departmentName: '동아시아비교인문학',

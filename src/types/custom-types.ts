@@ -1,4 +1,4 @@
-import { Department } from '../../server/src/department/department.entity';
+import { Department } from '../../server/src/department/department.entity.js';
 
 export interface SiteData {
     department: Department;

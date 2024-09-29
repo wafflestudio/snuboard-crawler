@@ -1,5 +1,5 @@
-import { SCIENCE } from '../../constants';
-import { BiosciCrawler } from './biosci';
+import { BiosciCrawler } from './biosci.js';
+import { SCIENCE } from '../../constants.js';
 
 export const sees = new BiosciCrawler({
     departmentName: '지구환경과학부',

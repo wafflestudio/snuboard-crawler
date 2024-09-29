@@ -1,5 +1,5 @@
-import { GeogCrawler } from '../social/geog';
-import { HUMANITIES } from '../../constants';
+import { HUMANITIES } from '../../constants.js';
+import { GeogCrawler } from '../social/geog.js';
 
 export const russian = new GeogCrawler({
     departmentName: '노어노문학과',

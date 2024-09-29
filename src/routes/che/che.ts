@@ -1,5 +1,5 @@
-import { CHE } from '../../constants';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { CHE } from '../../constants.js';
 
 export const che = new CategoryCrawler({
     departmentName: '생활과학대학',

@@ -1,5 +1,5 @@
-import { CHE } from '../../constants';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { CHE } from '../../constants.js';
 
 export const foodNutrition = new CategoryCrawler({
     departmentName: '식품영양학과',

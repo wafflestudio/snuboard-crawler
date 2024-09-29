@@ -1,17 +1,26 @@
 import * as path from 'path';
-import { Connection, createConnection, getConnection } from 'typeorm';
-import * as sqlite3 from 'sqlite3';
-import { TRUE_STRING } from './constants';
-import ormConfig from './ormconfig';
-import { Notice } from '../server/src/notice/notice.entity';
 
-export async function createDBConnection(): Promise<Connection> {
-    return createConnection(ormConfig);
+import { data } from 'cheerio/dist/commonjs/api/attributes';
+import sqlite3 from 'sqlite3';
+import { DataSource, DataSourceOptions } from 'typeorm';
+
+import { TRUE_STRING } from './constants.js';
+import ormConfig from '../server/src/ormconfig.js';
+import { Notice } from '../server/src/notice/notice.entity.js';
+import * as fs from 'fs';
+
+const dataSource = new DataSource(ormConfig as DataSourceOptions);
+dataSource.initialize();
+
+export async function getDataSource(): Promise<DataSource> {
+    if (!dataSource.isInitialized)
+        await dataSource.initialize();
+    return dataSource;
 }
 
 const storageDir = process.env.APIFY_LOCAL_STORAGE_DIR ?? path.resolve(process.cwd(), './apify_storage');
 
-export async function createRequestQueueConnection(departmentCode: string): Promise<sqlite3.Database> {
+export async function createRequestQueueDataSource(departmentCode: string): Promise<sqlite3.Database> {
     const dbFile = path.resolve(storageDir, `./request_queues/${departmentCode}/db.sqlite`);
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY, (err) => {
@@ -164,7 +173,7 @@ export async function noticeCount(db: sqlite3.Database, commonUrl: string | null
         return 0;
     }
 
-    const alreadyCrawled = await getConnection()
+    const alreadyCrawled = await dataSource
         .getRepository(Notice)
         .createQueryBuilder('notice')
         .where('link IN (:urls)')

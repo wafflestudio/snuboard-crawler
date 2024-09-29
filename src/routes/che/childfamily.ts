@@ -1,5 +1,5 @@
-import { CHE } from '../../constants';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { CHE } from '../../constants.js';
 
 export const childFamily = new CategoryCrawler({
     departmentName: '아동가족학과',

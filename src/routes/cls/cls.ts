@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { CLS } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { CLS } from '../../constants.js';
 
 export const cls = new CategoryCrawler({
     departmentName: '자유전공학부',

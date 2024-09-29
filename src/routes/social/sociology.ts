@@ -1,8 +1,8 @@
 // filename must equal to first level of url domain.
 // e.g. ir.snu.ac.kr -> ir.ts
 
-import { SOCIAL } from '../../constants';
-import { GeogCrawler } from './geog';
+import { GeogCrawler } from './geog.js';
+import { SOCIAL } from '../../constants.js';
 
 export const sociology = new GeogCrawler({
     departmentName: '사회학과',

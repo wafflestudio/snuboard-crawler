@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { SOCIAL } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { SOCIAL } from '../../constants.js';
 
 export const social = new CategoryCrawler({
     departmentName: '사회과학대학',

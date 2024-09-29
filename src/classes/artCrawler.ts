@@ -1,9 +1,14 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
-import { RequestQueue } from 'apify';
-import { Connection } from 'typeorm';
 import assert from 'assert';
-import * as Apify from 'apify';
+
+import { Actor } from 'apify';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext, RequestQueue } from 'crawlee';
+import { DataSource } from 'typeorm';
+
+import { Department } from '../../server/src/department/department.entity.js';
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
+import { createRequestQueueDataSource, isBasePushCondition } from '../database.js';
+import { strptime } from '../micro-strptime.js';
 import { CrawlerInit, CategoryTag, CrawlerOption, SiteData, TitleAndTags } from '../types/custom-types';
 import {
     addDepartmentProperty,
@@ -12,12 +17,8 @@ import {
     getOrCreateTagsWithMessage,
     parseTitle,
     saveNotice,
-} from '../utils';
-import { File, Notice } from '../../server/src/notice/notice.entity';
-import { strptime } from '../micro-strptime';
-import { Department } from '../../server/src/department/department.entity';
-import { createRequestQueueConnection, isBasePushCondition } from '../database';
-import { Crawler } from './crawler';
+} from '../utils.js';
+import { Crawler } from './crawler.js';
 
 export class ArtCrawler extends Crawler {
     protected readonly categoryTags: CategoryTag;
@@ -29,7 +30,7 @@ export class ArtCrawler extends Crawler {
         };
     }
 
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -49,7 +50,14 @@ export class ArtCrawler extends Crawler {
             notice.title = titleTag.title;
             const contentElement = $('div.entry-content');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html()?.trim() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body')
+                    .html()
+                    ?.trim() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -94,7 +102,7 @@ export class ArtCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -157,16 +165,16 @@ export class ArtCrawler extends Crawler {
         }
     };
 
-    startCrawl = async (connection: Connection, crawlerOption?: CrawlerOption): Promise<void> => {
-        assert(connection.isConnected);
+    override startCrawl = async (dataSource: DataSource, crawlerOption?: CrawlerOption): Promise<void> => {
+        assert(dataSource.isInitialized);
         this.log.info('Starting crawl for '.concat(this.departmentName));
-        const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
+        const requestQueue = await Actor.openRequestQueue(this.departmentCode); // each queue should have different id
         const department = await getOrCreate(Department, {
             name: this.departmentName,
             college: this.departmentCollege,
         });
         await addDepartmentProperty(department, this);
-        this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
+        this.requestQueueDB = await createRequestQueueDataSource(this.departmentCode);
         // department-specific initialization urls
         const categories: string[] = Object.keys(this.categoryTags);
 

@@ -1,19 +1,21 @@
 // filename must equal to first level of url domain.
 // e.g. architecture.snu.ac.kr -> architecture.ts
 
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { URL } from 'url';
+
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { ENGINEERING } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
-import { ENGINEERING } from '../../constants';
-import { Crawler } from '../../classes/crawler';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class ArchitectureCrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -32,7 +34,12 @@ class ArchitectureCrawler extends Crawler {
             notice.title = title;
             const contentElement = $('div.body_text.kr_body.lev3body');
 
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -49,6 +56,7 @@ class ArchitectureCrawler extends Crawler {
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
+                    if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                     file.link = fileUrl.endsWith('.pdf') ? fileUrl : request.loadedUrl;
                     files.push(file);
                 }
@@ -66,7 +74,7 @@ class ArchitectureCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -80,6 +88,7 @@ class ArchitectureCrawler extends Crawler {
                 if (page > 1 && isPinned) return;
                 const titleElement = $(element).find('div.kr a');
                 // const title = titleElement.children('strong').first().text();
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const preParseString = $(element).find('div.listbox_date.lev3.kr').text();
@@ -101,7 +110,7 @@ class ArchitectureCrawler extends Crawler {
 
             if (nextPageElem.length) {
                 const nextPath = urlInstance.pathname.split('/').slice(0, 3).join('/');
-
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const nextList = absoluteLink(`${nextPath}/page/${page + 1}`, request.loadedUrl);
                 if (!nextList) return;
                 this.log.info('Enqueueing list', { nextList });

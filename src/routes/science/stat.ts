@@ -1,5 +1,5 @@
-import { GeogCrawler } from '../social/geog';
-import { SCIENCE } from '../../constants';
+import { SCIENCE } from '../../constants.js';
+import { GeogCrawler } from '../social/geog.js';
 
 export const stat = new GeogCrawler({
     departmentName: '통계학과',

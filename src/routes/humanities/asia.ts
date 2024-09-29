@@ -1,16 +1,18 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { URL } from 'url';
+
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
-import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { HUMANITIES } from '../../constants';
+import { HUMANITIES } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class AsiaCrawler extends CategoryCrawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -26,16 +28,21 @@ class AsiaCrawler extends CategoryCrawler {
             notice.department = siteData.department;
             notice.departmentCode = departmentCode(siteData.department.name);
             const title = $('div.board_total header h1#bo_v_title').text().trim();
-            notice.title = title.substr(title.indexOf('|') + 1).trim();
+            notice.title = title.substring(title.indexOf('|') + 1).trim();
 
-            const tags = [];
-            tags.push(title.substr(0, title.indexOf('|')).trim());
+            const tags: string[] = [];
+            tags.push(title.substring(0, title.indexOf('|')).trim());
             const fileElement = $('section#bo_v_file li');
 
             const contentElement = $('section#bo_v_atc');
             contentElement.find('h2#bo_v_atc_title').remove();
 
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -73,7 +80,10 @@ class AsiaCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;

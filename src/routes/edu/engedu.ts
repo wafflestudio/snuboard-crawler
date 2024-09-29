@@ -1,5 +1,5 @@
-import { SocialEduCrawler } from './socialedu';
-import { EDU } from '../../constants';
+import { SocialEduCrawler } from './socialedu.js';
+import { EDU } from '../../constants.js';
 
 export const engEdu = new SocialEduCrawler({
     departmentName: '영어교육과',

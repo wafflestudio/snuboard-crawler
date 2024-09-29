@@ -1,9 +1,13 @@
-import { load } from 'cheerio';
-import { RequestQueue } from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { URL } from 'url';
-import { HUMANITIES, INF } from '../../constants';
-import { Crawler } from '../../classes/crawler';
+
+import { RequestQueue } from 'apify';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { HUMANITIES, INF } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
 import {
     absoluteLink,
@@ -12,12 +16,10 @@ import {
     getOrCreateTagsWithMessage,
     parseTitle,
     saveNotice,
-} from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
+} from '../../utils.js';
 
 class SnuFranceCrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -43,7 +45,12 @@ class SnuFranceCrawler extends Crawler {
             notice.title = $('div.title').text().trim();
 
             const contentElement = $('div.bbsCONTENTS2');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -55,19 +62,19 @@ class SnuFranceCrawler extends Crawler {
 
             const files: File[] = [];
             $('div.le_box dl dd a').each((index, element) => {
-                let fileParams = $(element)
+                const fileParams = $(element)
                     .attr('onclick')
                     ?.match(/'[^']+'/g);
                 if (fileParams === null || fileParams === undefined) return;
-                fileParams = fileParams.map((param) => {
+                const fileParams2 = fileParams.map((param) => {
                     return param.slice(1, -1);
                 });
                 const fileUrlInstance = new URL('http://www.snufrance.com/__admopt/__class/__download.asp');
-                fileUrlInstance.searchParams.set('pathUrl', fileParams[0]);
-                fileUrlInstance.searchParams.set('filename', fileParams[1]);
-                fileUrlInstance.searchParams.set('realname', fileParams[2]);
+                fileUrlInstance.searchParams.set('pathUrl', fileParams2[0]);
+                fileUrlInstance.searchParams.set('filename', fileParams2[1]);
+                fileUrlInstance.searchParams.set('realname', fileParams2[2]);
                 const file = new File();
-                // eslint-disable-next-line prefer-destructuring
+
                 file.name = $(element).text().trim();
                 file.link = fileUrlInstance.href;
                 files.push(file);
@@ -87,7 +94,7 @@ class SnuFranceCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -101,6 +108,7 @@ class SnuFranceCrawler extends Crawler {
                 const idx = titleElement.attr('onclick')?.replace(/[^0-9]/g, '');
                 if (idx === undefined) return;
                 const formElement = $('form[name="viewForm"]');
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const nextUrl = new URL(request.loadedUrl);
                 if (nextUrl === undefined) return;
                 nextUrl.searchParams.set('idx', idx);

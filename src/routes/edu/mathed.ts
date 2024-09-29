@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { EDU } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { EDU } from '../../constants.js';
 
 export const mathEd = new CategoryCrawler({
     departmentName: '수학교육과',

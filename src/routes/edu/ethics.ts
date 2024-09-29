@@ -1,8 +1,12 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { EDU, INF } from '../../constants';
-import { Crawler } from '../../classes/crawler';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { Crawler } from '../../classes/crawler.js';
+import { EDU, INF } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
 import {
     absoluteLink,
@@ -11,15 +15,12 @@ import {
     getOrCreateTagsWithMessage,
     removeUrlPageParam,
     saveNotice,
-} from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+} from '../../utils.js';
 
 class EthicsCrawler extends CategoryCrawler {
-    protected readonly encoding: string = 'EUC-KR';
+    protected override readonly encoding: string = 'EUC-KR';
 
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -43,7 +44,14 @@ class EthicsCrawler extends CategoryCrawler {
             notice.title = $('div.bbs_view_top').find('strong').text().trim();
             const contentElement = $('div.bbs_view_middle');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html()?.trim() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body')
+                    .html()
+                    ?.trim() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -83,7 +91,10 @@ class EthicsCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -104,7 +115,7 @@ class EthicsCrawler extends CategoryCrawler {
 
                 const titleElement = $(element).find('tr td p.cutstr a');
                 // const title = titleElement.text();
-
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const link = removeUrlPageParam(absoluteLink(titleElement.attr('href'), request.loadedUrl));
                 if (link === undefined) return;
 

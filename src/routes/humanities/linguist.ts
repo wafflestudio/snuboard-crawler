@@ -1,19 +1,21 @@
 // filename must equal to first level of url domain.
 // e.g. mse.snu.ac.kr -> mse.ts
 
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { URL } from 'url';
+
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
-import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { HUMANITIES } from '../../constants';
+import { HUMANITIES } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class LinguistCrawler extends CategoryCrawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -33,7 +35,7 @@ class LinguistCrawler extends CategoryCrawler {
             notice.departmentCode = departmentCode(siteData.department.name);
             const title = $('table.board tbody tr.thead td div#tdtitle').text();
             let titleText = title;
-            const tags = [];
+            const tags: string[] = [];
             if (title.startsWith('[')) {
                 titleText = title.slice(title.indexOf(']') + 1).trim();
             }
@@ -42,7 +44,12 @@ class LinguistCrawler extends CategoryCrawler {
             const contentElement = $('div#mh-board ');
             contentElement.find('table').remove();
 
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -79,7 +86,10 @@ class LinguistCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -90,6 +100,7 @@ class LinguistCrawler extends CategoryCrawler {
         if ($ !== undefined) {
             $('div.threadlist').each((index, element) => {
                 const titleElement = $(element).find('article header h1 a');
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const pageUrl = new URL(link);
@@ -114,6 +125,7 @@ class LinguistCrawler extends CategoryCrawler {
 
             const nextElement = $('div.pagenation a.next');
             if (nextElement.length === 0) return;
+            if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
             const nextList = absoluteLink(nextElement.attr('href'), request.loadedUrl);
             if (nextList === undefined) return;
 

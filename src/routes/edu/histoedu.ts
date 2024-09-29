@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { EDU } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { EDU } from '../../constants.js';
 
 export const histoEdu = new CategoryCrawler({
     departmentName: '역사교육과',

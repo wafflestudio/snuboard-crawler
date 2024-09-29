@@ -1,11 +1,16 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
-import * as Apify from 'apify';
-import { RequestQueue } from 'apify';
-import { Connection } from 'typeorm';
 import assert from 'assert';
-import { strptime } from '../micro-strptime';
-import { File, Notice } from '../../server/src/notice/notice.entity';
+
+import { Actor } from 'apify';
+import { load } from 'cheerio';
+import { RequestQueue, CheerioCrawlingContext } from 'crawlee';
+import { DataSource } from 'typeorm';
+
+import { File, Notice } from '../../server/src/notice/notice.entity.js';
+import { strptime } from '../micro-strptime.js';
+import { Crawler } from './crawler.js';
+import { Department } from '../../server/src/department/department.entity.js';
+import { createRequestQueueDataSource, isBasePushCondition, listExists } from '../database.js';
+import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
 import {
     absoluteLink,
     addDepartmentProperty,
@@ -13,11 +18,7 @@ import {
     getOrCreate,
     getOrCreateTagsWithMessage,
     saveNotice,
-} from '../utils';
-import { CategoryCrawlerInit, CategoryTag, CrawlerOption, SiteData } from '../types/custom-types';
-import { Crawler } from './crawler';
-import { Department } from '../../server/src/department/department.entity';
-import { createRequestQueueConnection, isBasePushCondition, listExists } from '../database';
+} from '../utils.js';
 
 export class CategoryCrawler extends Crawler {
     protected readonly categoryTags: CategoryTag;
@@ -30,7 +31,7 @@ export class CategoryCrawler extends Crawler {
         this.excludedTag = initData.excludedTag;
     }
 
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -54,7 +55,13 @@ export class CategoryCrawler extends Crawler {
             notice.title = $('dl.cHeader dt').text().trim();
             const contentElement = $('div.postArea');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -105,7 +112,7 @@ export class CategoryCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -123,7 +130,7 @@ export class CategoryCrawler extends Crawler {
 
                 const titleElement = $($(element).find('a'));
                 // const title = titleElement.text();
-
+                assert(request.loadedUrl !== undefined);
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const dateString = $($(element).children('td')[4]).text().trim();
@@ -147,6 +154,7 @@ export class CategoryCrawler extends Crawler {
             if (pageString) nextPathArray = nextPathArray.slice(0, -2);
             const nextPath = nextPathArray.join('/');
 
+            assert(request.loadedUrl !== undefined);
             const nextList = absoluteLink(`${nextPath}/page/${page + 1}`, request.loadedUrl);
             if (!nextList) return;
 
@@ -183,16 +191,16 @@ export class CategoryCrawler extends Crawler {
         }
     };
 
-    startCrawl = async (connection: Connection, crawlerOption?: CrawlerOption): Promise<void> => {
-        assert(connection.isConnected);
+    override startCrawl = async (dataSource: DataSource, crawlerOption?: CrawlerOption): Promise<void> => {
+        assert(dataSource.isInitialized);
         this.log.info('Starting crawl for '.concat(this.departmentName));
-        const requestQueue = await Apify.openRequestQueue(this.departmentCode); // each queue should have different id
+        const requestQueue = await Actor.openRequestQueue(this.departmentCode); // each queue should have different id
         const department = await getOrCreate(Department, {
             name: this.departmentName,
             college: this.departmentCollege,
         });
         await addDepartmentProperty(department, this);
-        this.requestQueueDB = await createRequestQueueConnection(this.departmentCode);
+        this.requestQueueDB = await createRequestQueueDataSource(this.departmentCode);
         // department-specific initialization urls
         const categories: string[] = Object.keys(this.categoryTags);
 

@@ -1,5 +1,5 @@
-import { BiosciCrawler } from '../science/biosci';
-import { SOCIAL } from '../../constants';
+import { SOCIAL } from '../../constants.js';
+import { BiosciCrawler } from '../science/biosci.js';
 
 export const econ = new BiosciCrawler({
     departmentName: '경제학부',

@@ -1,26 +1,31 @@
-import { EntityTarget, getConnection, getRepository } from 'typeorm';
-import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { Buffer } from 'buffer';
-import { Notice } from '../server/src/notice/notice.entity';
-import { Department, NoticeTag, Tag } from '../server/src/department/department.entity';
-import { StringKey, TitleAndTags } from './types/custom-types';
-import { Crawler } from './classes/crawler';
-import { sendNoticeCreationMessage } from './firebase';
-import { TRUE_STRING } from './constants';
 
-export async function getOrCreate<T>(Entity: EntityTarget<T>, entityLike: DeepPartial<T>, save = true): Promise<T> {
+import { EntitySchema, EntityTarget, FindOptionsWhere, ObjectLiteral, ObjectType } from 'typeorm';
+import { DeepPartial } from 'typeorm/common/DeepPartial';
+
+import { Crawler } from './classes/crawler.js';
+import { TRUE_STRING } from './constants.js';
+import { getDataSource } from './database.js';
+import { sendNoticeCreationMessage } from './firebase.js';
+import { StringKey, TitleAndTags } from './types/custom-types';
+import { Department, NoticeTag, Tag } from '../server/src/department/department.entity.js';
+import { Notice } from '../server/src/notice/notice.entity.js';
+
+export async function getOrCreate<T extends ObjectLiteral>(
+    Entity: EntityTarget<T>,
+    entityLike: DeepPartial<T>,
+    save: boolean = true,
+): Promise<T> {
     // find T element with entityLike property if it exists.
     // otherwise, create new T element with entityLike property
     // if save is true, the newly created element will be saved to DB.
-    const repository = getRepository(Entity);
-    let element: T | undefined = await repository.findOne(entityLike);
-    if (element === undefined) {
-        element = repository.create(entityLike);
-        if (save) {
-            await repository.save(element as DeepPartial<T>);
-        }
+    if (save) {
+        const repository = ((await getDataSource()).getRepository(Entity));
+        const element: T | null = await repository.save(entityLike);
+        if (element === null) throw new Error('Failed to save entity');
+        return element;
     }
-    return element;
+    return entityLike as T;
 }
 
 export async function getOrCreateTagsWithMessage(
@@ -45,7 +50,7 @@ export async function getOrCreateTagsWithMessage(
 }
 
 export async function sendMessageIfCreated(tags: string[], notice: Notice, department: Department) {
-    const isSendMessageCondition = await NoticeTag.findOne({ notice });
+    const isSendMessageCondition = await NoticeTag.findOne({ where: { notice } });
     if (isSendMessageCondition === undefined) {
         let idx = 0;
         const offset = 5;
@@ -84,7 +89,7 @@ export async function getOrCreateTags(tags: string[], notice: Notice, department
             const tag = await getOrCreate(Tag, { department, name: tagName });
             const noticeTag = await getOrCreate(NoticeTag, { notice, tag });
             noticeTag.noticeCreatedAt = notice.createdAt;
-            await noticeTag.save();
+            await NoticeTag.save(noticeTag);
         }),
     );
 }
@@ -117,9 +122,9 @@ export function parseTitle(titleText: string): TitleAndTags {
     const tags =
         titleAndTags && titleAndTags[1]
             ? titleAndTags[1]
-                  .split('[')
-                  .map((tag) => tag.replace(']', '').trim())
-                  .filter((tag) => tag.length)
+                .split('[')
+                .map((tag) => tag.replace(']', '').trim())
+                .filter((tag) => tag.length)
             : [];
     return { title, tags };
 }

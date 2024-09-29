@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { VET } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { VET } from '../../constants.js';
 
 export const vet = new CategoryCrawler({
     departmentName: '수의과대학',

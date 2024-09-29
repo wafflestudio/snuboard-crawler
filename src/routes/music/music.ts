@@ -1,5 +1,5 @@
-import { CategoryCrawler } from '../../classes/categoryCrawler';
-import { MUSIC } from '../../constants';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { MUSIC } from '../../constants.js';
 
 export const music = new CategoryCrawler({
     departmentName: '음악대학',

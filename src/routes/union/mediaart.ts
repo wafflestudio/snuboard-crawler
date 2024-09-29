@@ -1,5 +1,5 @@
-import { ArtCrawler } from '../../classes/artCrawler';
-import { UNION } from '../../constants';
+import { ArtCrawler } from '../../classes/artCrawler.js';
+import { UNION } from '../../constants.js';
 
 export const mediaart = new ArtCrawler({
     departmentName: '영상매체예술',

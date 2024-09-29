@@ -1,15 +1,16 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { Crawler } from '../../classes/crawler';
-import { INF, SCIENCE } from '../../constants';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { INF, SCIENCE } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class PhysicsCrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -32,7 +33,12 @@ class PhysicsCrawler extends Crawler {
             const contentElement = $('div.fixwidth.bbs_contents');
 
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -71,11 +77,12 @@ class PhysicsCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
+        if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
         const urlInstance = new URL(request.loadedUrl);
         const page = +(urlInstance.searchParams.get('page') ?? 1);
 
@@ -84,6 +91,7 @@ class PhysicsCrawler extends Crawler {
                 const isPinned = $(element).find('td.text-center.noti-ico').length !== 0;
 
                 const titleElement = $(element).find('td.title a').first();
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
 

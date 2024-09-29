@@ -1,15 +1,16 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { HUMANITIES, INF } from '../../constants';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { HUMANITIES, INF } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class SpanishCrawler extends CategoryCrawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -36,7 +37,12 @@ class SpanishCrawler extends CategoryCrawler {
             notice.title = noticeElement.find('tbody tr:nth-child(1) td').text().trim();
             const contentElement = $('td.note_view_textarea');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -72,7 +78,10 @@ class SpanishCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -91,7 +100,7 @@ class SpanishCrawler extends CategoryCrawler {
 
                 const titleElement = $(element).find('td:nth-child(2) a');
                 // const title = titleElement.text();
-
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
 
                 if (link === undefined) return;

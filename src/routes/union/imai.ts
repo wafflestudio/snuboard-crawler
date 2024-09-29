@@ -1,5 +1,5 @@
-import { GeogCrawler } from '../social/geog';
-import { UNION } from '../../constants';
+import { UNION } from '../../constants.js';
+import { GeogCrawler } from '../social/geog.js';
 
 export const imai = new GeogCrawler({
     departmentName: '인공지능',

@@ -1,5 +1,5 @@
-import { BiosciCrawler } from '../science/biosci';
-import { NURSING } from '../../constants';
+import { NURSING } from '../../constants.js';
+import { BiosciCrawler } from '../science/biosci.js';
 
 export const nursing = new BiosciCrawler({
     departmentName: '간호학과',

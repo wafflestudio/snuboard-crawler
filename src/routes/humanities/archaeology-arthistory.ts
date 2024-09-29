@@ -1,15 +1,16 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { Crawler } from '../../classes/crawler';
-import { HUMANITIES, INF } from '../../constants';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { HUMANITIES, INF } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class ArchaeologyArtHistoryCrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -34,7 +35,14 @@ class ArchaeologyArtHistoryCrawler extends Crawler {
             notice.title = noticeElement.find('tr:nth-child(1) th').text().trim();
             const contentElement = noticeElement.find('td.viewTxt');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html()?.trim() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body')
+                    .html()
+                    ?.trim() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -72,7 +80,7 @@ class ArchaeologyArtHistoryCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;

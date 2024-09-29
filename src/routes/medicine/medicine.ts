@@ -1,15 +1,17 @@
 // filename must equal to first level of url domain.
 
-import { RequestQueue } from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { URL } from 'url';
+
+import { RequestQueue } from 'apify';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { MEDICINE } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { MedPageSummary, SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
-import { Crawler } from '../../classes/crawler';
-import { MEDICINE } from '../../constants';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 export class MedicineCrawler extends Crawler {
     noticeBaseUrl = 'https://medicine.snu.ac.kr/fnt/nac/selectNoticeDetail.do';
@@ -18,7 +20,7 @@ export class MedicineCrawler extends Crawler {
 
     fileDownloadUrl = 'https://medicine.snu.ac.kr/dsc/cmm/dscIndex/downloadFile.do';
 
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -41,7 +43,12 @@ export class MedicineCrawler extends Crawler {
             notice.title = $('span.subject span.ellipsis2').text().trim();
 
             const contentElement = $(' div.view_contents');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -63,7 +70,7 @@ export class MedicineCrawler extends Crawler {
                 fileUrl.searchParams.set('frstRegisterId', registerId);
                 fileUrl.searchParams.set('file_id', fileNum);
                 const file = new File();
-                // eslint-disable-next-line prefer-destructuring
+
                 file.name = $(element).text().trim();
                 file.link = fileUrl.href;
                 files.push(file);
@@ -86,7 +93,7 @@ export class MedicineCrawler extends Crawler {
         }
     };
 
-    handleFirst = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleFirst = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const siteData = <SiteData>request.userData;
         if ($) {
@@ -146,7 +153,7 @@ export class MedicineCrawler extends Crawler {
         }
     };
 
-    handleMore = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleMore = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, body } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -214,7 +221,7 @@ export class MedicineCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request } = context;
         const { url } = request;
         this.log.info('Page opened.', { url });

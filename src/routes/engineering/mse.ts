@@ -1,19 +1,21 @@
 // filename must equal to first level of url domain.
 // e.g. mse.snu.ac.kr -> mse.ts
 
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
+import { URL } from 'url';
+
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
-import { URL } from 'url';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { Notice, File } from '../../../server/src/notice/notice.entity.js';
-import { CategoryTag, SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { ENGINEERING } from '../../constants';
+import { ENGINEERING } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
+import { CategoryTag, SiteData } from '../../types/custom-types';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class MSECrawler extends CategoryCrawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -38,7 +40,12 @@ class MSECrawler extends CategoryCrawler {
             const title = $('div.g_head div.title').text().trim();
             notice.title = title;
             const contentElement = $('div.g_body');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -89,7 +96,10 @@ class MSECrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;

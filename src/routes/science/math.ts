@@ -1,7 +1,11 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { SCIENCE } from '../../constants';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { SCIENCE } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
 import {
     absoluteLink,
@@ -10,13 +14,10 @@ import {
     getOrCreateTagsWithMessage,
     removeUrlPageParam,
     saveNotice,
-} from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
-import { Crawler } from '../../classes/crawler';
+} from '../../utils.js';
 
 class MathCrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -34,7 +35,12 @@ class MathCrawler extends Crawler {
             notice.departmentCode = departmentCode(siteData.department.name);
             notice.title = $('div.top_area h1 a').text().trim();
             const contentElement = $('div.rd_body div.xe_content');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim();
@@ -78,7 +84,7 @@ class MathCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -87,7 +93,7 @@ class MathCrawler extends Crawler {
             $('table tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td.title a').last();
                 // const title = titleElement.text();
-
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 link = removeUrlPageParam(link);
                 if (link === undefined) return;
@@ -104,7 +110,7 @@ class MathCrawler extends Crawler {
                     userData: newSiteData,
                 });
             });
-
+            if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
             const urlInstance = new URL(request.loadedUrl);
             const page = +(urlInstance.searchParams.get('page') ?? 1);
             const lastNoticeId = +$('table tbody tr').last().find('td').first().text().trim();

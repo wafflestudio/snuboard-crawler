@@ -1,18 +1,19 @@
 // filename must equal to first level of url domain.
 // e.g. cse.snu.ac.kr -> cse.ts
 
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
 import { RequestQueue } from 'apify';
 import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { ENGINEERING } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
-import { Crawler } from '../../classes/crawler';
-import { ENGINEERING } from '../../constants';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class CSECrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -40,7 +41,12 @@ class CSECrawler extends Crawler {
                 contentElement = $('div.field-name-body');
                 content = contentElement.children('div').children('div').html() ?? '';
             }
-            content = load(content, { decodeEntities: false })('body').html() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -111,7 +117,7 @@ class CSECrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -121,6 +127,7 @@ class CSECrawler extends Crawler {
                 const isPinned = $(element).attr('class')?.split(' ').includes('sticky') ?? false;
                 const titleElement = $($($(element).children('td')[0]).children('a'));
                 // const title = titleElement.text();
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const link = absoluteLink(titleElement.attr('href'), request.loadedUrl)?.replace('/en/', '/');
                 if (link === undefined) return;
                 const dateString = $($(element).children('td')[1]).text().trim();
@@ -138,7 +145,7 @@ class CSECrawler extends Crawler {
                     userData: newSiteData,
                 });
             });
-
+            if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
             const nextList = absoluteLink($('li.pager-next').children('a').attr('href'), request.loadedUrl);
             if (nextList === undefined) return;
             this.log.info('Enqueueing list', { nextList });

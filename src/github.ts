@@ -1,7 +1,9 @@
-import { Octokit } from '@octokit/core';
-import { createAppAuth } from '@octokit/auth-app';
 import { readFileSync } from 'fs';
-import { ENV } from './env';
+
+import { createAppAuth } from '@octokit/auth-app';
+import { Octokit } from '@octokit/core';
+
+import { ENV } from './env.js';
 
 let octokit: Octokit | null;
 if (ENV === 'ci') throw Error('github.ts should not be imported in ci');

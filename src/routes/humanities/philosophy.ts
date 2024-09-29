@@ -1,7 +1,11 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { Crawler } from '../../classes/crawler';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { HUMANITIES, INF } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
 import {
     absoluteLink,
@@ -10,15 +14,12 @@ import {
     getOrCreateTagsWithMessage,
     removeUrlPageParam,
     saveNotice,
-} from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
-import { HUMANITIES, INF } from '../../constants';
+} from '../../utils.js';
 
 export class PhilosophyCralwer extends Crawler {
-    protected readonly encoding: string = 'EUC-KR';
+    protected override readonly encoding: string = 'EUC-KR';
 
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -43,7 +44,14 @@ export class PhilosophyCralwer extends Crawler {
             notice.title = noticeElement.find('tr th.view_subj').text().trim();
             const contentElement = noticeElement.find('td.vie_txt');
             let content = contentElement.html() ?? '';
-            content = load(content, { decodeEntities: false })('body').html()?.trim() ?? '';
+            content =
+                load(content, {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body')
+                    .html()
+                    ?.trim() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -64,8 +72,7 @@ export class PhilosophyCralwer extends Crawler {
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
-                    file.link =
-                        `http://philosophy.snu.ac.kr/board/${fileUrl.match(fileRe)?.[0].slice(6, -2)}` ?? notice.link;
+                    file.link = `http://philosophy.snu.ac.kr/board/${fileUrl.match(fileRe)?.[0].slice(6, -2)}`;
                     files.push(file);
                 }
             });
@@ -85,7 +92,7 @@ export class PhilosophyCralwer extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -110,6 +117,7 @@ export class PhilosophyCralwer extends Crawler {
                 // const title = titleElement.text();
                 const category = $(element).find('td:nth-child(2)').text().trim();
 
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 const link = removeUrlPageParam(absoluteLink(titleElement.attr('href'), request.loadedUrl));
                 if (link === undefined) return;
 

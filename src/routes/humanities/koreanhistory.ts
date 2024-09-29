@@ -1,5 +1,5 @@
-import { HUMANITIES } from '../../constants';
-import { CategoryCrawler } from '../../classes/categoryCrawler';
+import { CategoryCrawler } from '../../classes/categoryCrawler.js';
+import { HUMANITIES } from '../../constants.js';
 
 export const koreanHistory = new CategoryCrawler({
     departmentName: '국사학과',

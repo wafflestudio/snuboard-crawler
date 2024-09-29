@@ -1,5 +1,5 @@
-import { ArtCrawler } from '../../classes/artCrawler';
-import { ART } from '../../constants';
+import { ArtCrawler } from '../../classes/artCrawler.js';
+import { ART } from '../../constants.js';
 
 export const design = new ArtCrawler({
     departmentName: '디자인과',

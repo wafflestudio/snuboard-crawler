@@ -1,15 +1,16 @@
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { RequestQueue } from 'apify';
-import { SCIENCE } from '../../constants';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
+import { File, Notice } from '../../../server/src/notice/notice.entity.js';
+import { Crawler } from '../../classes/crawler.js';
+import { SCIENCE } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
 import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { File, Notice } from '../../../server/src/notice/notice.entity';
-import { strptime } from '../../micro-strptime';
-import { Crawler } from '../../classes/crawler';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 export class BiosciCrawler extends Crawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -33,7 +34,12 @@ export class BiosciCrawler extends Crawler {
 
             const contentElement = $('div.bbs_contents');
 
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -78,7 +84,7 @@ export class BiosciCrawler extends Crawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    handleList = async (context: CheerioCrawlingContext<SiteData, any>, requestQueue: RequestQueue): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -87,7 +93,7 @@ export class BiosciCrawler extends Crawler {
             $('table.fixwidth tbody tr').each((index, element) => {
                 const titleElement = $(element).find('td.title a');
                 const isPinned = $(element).hasClass('noti');
-
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const pageUrl = new URL(link);

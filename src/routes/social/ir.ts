@@ -1,19 +1,21 @@
 // filename must equal to first level of url domain.
 // e.g. ir.snu.ac.kr -> ir.ts
 
-import { RequestQueue } from 'apify';
-import { CheerioHandlePageInputs } from 'apify/types/crawlers/cheerio_crawler';
-import { load } from 'cheerio';
 import { URL } from 'url';
+
+import { RequestQueue } from 'apify';
+import { load } from 'cheerio';
+import { CheerioCrawlingContext } from 'crawlee';
+
 import { File, Notice } from '../../../server/src/notice/notice.entity.js';
-import { SiteData } from '../../types/custom-types';
-import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils';
-import { strptime } from '../../micro-strptime';
 import { CategoryCrawler } from '../../classes/categoryCrawler.js';
-import { SOCIAL } from '../../constants';
+import { SOCIAL } from '../../constants.js';
+import { strptime } from '../../micro-strptime.js';
+import { SiteData } from '../../types/custom-types';
+import { absoluteLink, departmentCode, getOrCreate, getOrCreateTagsWithMessage, saveNotice } from '../../utils.js';
 
 class IRCrawler extends CategoryCrawler {
-    handlePage = async (context: CheerioHandlePageInputs): Promise<void> => {
+    override handlePage = async (context: CheerioCrawlingContext<SiteData, any>): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -35,7 +37,12 @@ class IRCrawler extends CategoryCrawler {
 
             notice.title = $('table.write-table th:contains("제목")').siblings('td').text().trim();
             const contentElement = $('table.write-table tr:nth-child(10)').children('td');
-            const content = load(contentElement.html() ?? '', { decodeEntities: false })('body').html() ?? '';
+            const content =
+                load(contentElement.html() ?? '', {
+                    // @ts-ignore
+                    _useHtmlParser2: true,
+                    decodeEntities: false,
+                })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
             notice.content = content;
             notice.contentText = contentElement.text().trim(); // texts are automatically utf-8 encoded
@@ -54,7 +61,7 @@ class IRCrawler extends CategoryCrawler {
                     const fileUrl = $(element).attr('onclick')?.match(fileUrlRe);
                     if (fileUrl) {
                         const file = new File();
-                        // eslint-disable-next-line prefer-destructuring
+
                         file.name = fileUrl[1].split('-')[1];
                         file.link = absoluteLink(`?file=${fileUrl[1]}`, fileBaseUrl) ?? '';
                         files.push(file);
@@ -77,7 +84,10 @@ class IRCrawler extends CategoryCrawler {
         }
     };
 
-    handleList = async (context: CheerioHandlePageInputs, requestQueue: RequestQueue): Promise<void> => {
+    override handleList = async (
+        context: CheerioCrawlingContext<SiteData, any>,
+        requestQueue: RequestQueue,
+    ): Promise<void> => {
         const { request, $ } = context;
         const { url } = request;
         const siteData = <SiteData>request.userData;
@@ -90,7 +100,7 @@ class IRCrawler extends CategoryCrawler {
             $('table.data-table tbody tr').each((index, element) => {
                 const isPinned = $(element).find('i.fa-volume-up').length !== 0;
                 const titleElement = $(element).children('td.title-td').children('a');
-
+                if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
                 let link = absoluteLink(titleElement.attr('href'), request.loadedUrl);
                 if (link === undefined) return;
                 const pageUrl = new URL(link);

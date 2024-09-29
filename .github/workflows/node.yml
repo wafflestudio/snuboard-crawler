@@ -40,7 +40,7 @@ jobs:
         run: npm run build
 
       - name: Migrate DB
-        run: ./node_modules/.bin/typeorm migration:run -d dist/src/datasource.js
+        run: npx typeorm migration:run -d dist/server/src/datasource.js
         env:
           NODE_ENV: ci
 

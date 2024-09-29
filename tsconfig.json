@@ -81,7 +81,7 @@
     "tests/**/*",
     "server/src/**/*.entity.ts",
     "server/src/migration/*.ts",
-    "server/src/ormconfig.ts",
+    "server/src/*.ts",
     "eslint.config.mjs",
   ],
 }

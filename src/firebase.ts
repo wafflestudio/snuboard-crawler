@@ -9,7 +9,7 @@ import { Notice } from '../server/src/notice/notice.entity.js';
 import MessagingOptions = messaging.MessagingOptions;
 import { cert, initializeApp } from 'firebase-admin/app';
 
-initializeApp({ credential: cert(fbConfig) });
+initializeApp({ credential: admin.credential.applicationDefault() });
 
 export async function sendNoticeCreationMessage(
     condition: string,

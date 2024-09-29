@@ -31,7 +31,7 @@
 		"build": "npx tsc",
 		"rebuild": "rm -rf dist/* && npm run build",
 		"clean": "rm -rf apify_storage",
-		"test": "NODE_OPTIONS='--experimental-vm-modules' npx jest",
+		"test": "NODE_OPTIONS='--experimental-vm-modules' npx jest --passWithNoTests",
 		"coverage": "jest --coverage",
 		"update": "git submodule update --remote",
 		"precrawl-one": "npm run build",

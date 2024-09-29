@@ -81,7 +81,9 @@
     "tests/**/*",
     "server/src/**/*.entity.ts",
     "server/src/migration/*.ts",
-    "server/src/*.ts",
+    "server/src/ormconfig.ts",
+    "server/src/datasource.ts",
+    "server/src/fbconfig.ts",
     "eslint.config.mjs",
   ],
 }

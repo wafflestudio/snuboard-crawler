@@ -1,12 +1,11 @@
-import * as admin from 'firebase-admin';
-import { messaging } from 'firebase-admin';
+import admin from 'firebase-admin';
 
 import { fbConfig } from '../server/src/fbconfig.js';
 import { parseTagsToStringWithSeparator } from './utils.js';
 import { Department } from '../server/src/department/department.entity.js';
 import { Notice } from '../server/src/notice/notice.entity.js';
 
-import MessagingOptions = messaging.MessagingOptions;
+import MessagingOptions = admin.messaging.MessagingOptions;
 import { cert, initializeApp } from 'firebase-admin/app';
 
 initializeApp({ credential: admin.credential.applicationDefault() });

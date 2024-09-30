@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer';
 
-import { EntitySchema, EntityTarget, FindOptionsWhere, ObjectLiteral, ObjectType } from 'typeorm';
+import { EntitySchema, EntityTarget, FindOptionsWhere, InsertResult, ObjectLiteral, ObjectType } from 'typeorm';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
 
 import { Crawler } from './classes/crawler.js';
@@ -12,20 +12,21 @@ import { Department, NoticeTag, Tag } from '../server/src/department/department.
 import { Notice } from '../server/src/notice/notice.entity.js';
 
 export async function getOrCreate<T extends ObjectLiteral>(
-    Entity: EntityTarget<T>,
-    entityLike: DeepPartial<T>,
+    Entity: ObjectType<T>,
+    entityLike: Partial<T>,
     save: boolean = true,
+    conflicts: string[] = [],
 ): Promise<T> {
-    // find T element with entityLike property if it exists.
-    // otherwise, create new T element with entityLike property
-    // if save is true, the newly created element will be saved to DB.
-    if (save) {
-        const repository = ((await getDataSource()).getRepository(Entity));
-        const element: T | null = await repository.save(entityLike);
-        if (element === null) throw new Error('Failed to save entity');
-        return element;
+    const repository = (await getDataSource()).getRepository(Entity);
+    let entity = await repository.findOneBy(entityLike as FindOptionsWhere<T>);
+
+    if (!entity) {
+        entity = repository.create(entityLike as DeepPartial<T>);
+        if (save) {
+            await repository.save(entity);
+        }
     }
-    return entityLike as T;
+    return entity;
 }
 
 export async function getOrCreateTagsWithMessage(

@@ -33,5 +33,17 @@ export async function sendNoticeCreationMessage(
         contentAvailable: true,
     };
 
-    await admin.messaging().sendToCondition(condition, payload, options);
+    await admin.messaging().send({
+        data: payload.data,
+        apns: {
+            payload: {
+                aps: {
+                    contentAvailable: true,
+                },
+                ...payload.data,
+
+            }
+        },
+        condition
+    })
 }

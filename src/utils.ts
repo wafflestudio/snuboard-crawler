@@ -52,7 +52,7 @@ export async function getOrCreateTagsWithMessage(
 
 export async function sendMessageIfCreated(tags: string[], notice: Notice, department: Department) {
     const isSendMessageCondition = await NoticeTag.findOne({ where: { notice } });
-    if (isSendMessageCondition === undefined) {
+    if (isSendMessageCondition !== undefined) {
         let idx = 0;
         const offset = 5;
         while (idx < tags.length) {

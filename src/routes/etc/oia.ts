@@ -32,7 +32,7 @@ class OIACrawler extends Crawler {
             const content =
                 load(contentElement.html() ?? '', {
                     // @ts-ignore
-                    _useHtmlParser2: true,
+
                     decodeEntities: false,
                 })('body').html() ?? '';
             notice.content = content;

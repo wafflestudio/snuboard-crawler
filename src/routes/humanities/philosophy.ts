@@ -47,7 +47,7 @@ export class PhilosophyCralwer extends Crawler {
             content =
                 load(content, {
                     // @ts-ignore
-                    _useHtmlParser2: true,
+
                     decodeEntities: false,
                 })('body')
                     .html()

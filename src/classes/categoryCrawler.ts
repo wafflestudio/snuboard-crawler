@@ -59,7 +59,7 @@ export class CategoryCrawler extends Crawler {
             content =
                 load(content, {
                     // @ts-ignore
-                    _useHtmlParser2: true,
+
                     decodeEntities: false,
                 })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding

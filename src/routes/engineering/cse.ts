@@ -23,28 +23,24 @@ class CSECrawler extends Crawler {
             // creation order
             // dept -> notice -> file
             //                -> tag -> notice_tag
-            const menu = $('.menu-block-wrapper li a.active').attr('href');
-            const isSeminar = menu === '/seminars';
 
             const notice = await getOrCreate(Notice, { link: url }, false);
 
             notice.department = siteData.department;
             notice.departmentCode = departmentCode(siteData.department.name);
-            notice.title = $('h1#page-title').text().trim();
+            notice.title = $('h2').text().trim();
 
             let contentElement;
             let content;
-            if (isSeminar) {
-                contentElement = $('div.node-seminar');
-                content = contentElement.html() ?? '';
-            } else {
-                contentElement = $('div.field-name-body');
-                content = contentElement.children('div').children('div').html() ?? '';
-            }
+
+            contentElement = $('div.sun-editor-editable');
+            if (contentElement.children('div').last().text() == '')
+                contentElement.children('div').last().remove()
+            content = contentElement.html() ?? '';
+
             content =
                 load(content, {
                     // @ts-ignore
-                    _useHtmlParser2: true,
                     decodeEntities: false,
                 })('body').html() ?? '';
             // ^ encode non-unicode letters with utf-8 instead of HTML encoding
@@ -53,7 +49,7 @@ class CSECrawler extends Crawler {
 
             try {
                 // example: '2021/02/15 (월) 오후 7:21'
-                const fullDateString: string = $('div.submitted').text().split(',')[1].substring(8).trim();
+                const fullDateString: string = $('div.gap-5 p:nth-child(2)').text().split('작성 날짜: ')[1].trim();
                 notice.createdAt = strptime(fullDateString, '%Y/%m/%d %a %p %H:%M');
             } catch (error) {
                 if (error instanceof TypeError) {
@@ -72,8 +68,8 @@ class CSECrawler extends Crawler {
             await saveNotice(notice);
 
             const files: File[] = [];
-            $('span.file').each(function (index, element) {
-                const fileUrl = $(element).children('a').attr('href');
+            $('div.self-start').each(function (index, element) {
+                const fileUrl = $(element).attr('href');
                 if (fileUrl) {
                     const file = new File();
                     file.name = $(element).text().trim();
@@ -89,29 +85,16 @@ class CSECrawler extends Crawler {
                 }),
             );
 
-            if (isSeminar) {
-                const tags = ['세미나'];
-                await getOrCreateTagsWithMessage(tags, notice, siteData.department);
-            } else {
-                const tags: string[] = [];
 
-                $('div.field-name-field-tag').each((index, element) => {
-                    const tagString = $(element).text();
+            const tags: string[] = [];
 
-                    if (tagString.includes('태그:')) {
-                        tagString
-                            .replace('태그:', '')
-                            .split(',')
-                            .map((tag) => tag.trim())
-                            .filter((value) => value.length > 0)
-                            .forEach((tag) => tags.push(tag));
-                    } else {
-                        throw new TypeError(`tagString ${tagString} does not include '태그:'`);
-                    }
-                });
+            $('div.ml-6 a').each((index, element) => {
+                const tagString = $(element).text().trim();
+                tags.push(tagString);
+            });
 
-                await getOrCreateTagsWithMessage(tags, notice, siteData.department);
-            }
+            await getOrCreateTagsWithMessage(tags, notice, siteData.department);
+
         } else {
             throw new TypeError('Selector is undefined');
         }
@@ -123,14 +106,14 @@ class CSECrawler extends Crawler {
         const siteData = <SiteData>request.userData;
         this.log.info('Page opened.', { url });
         if ($ !== undefined) {
-            $('table.views-table tbody tr').each((index, element) => {
-                const isPinned = $(element).attr('class')?.split(' ').includes('sticky') ?? false;
-                const titleElement = $($($(element).children('td')[0]).children('a'));
+            $('ul li').each((index, element) => {
+                const isPinned = $($(element).children()[0]).children().length > 0;
+                const titleElement = $($($(element).children()[1]).children()[0]);
                 // const title = titleElement.text();
                 if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
-                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl)?.replace('/en/', '/');
+                const link = absoluteLink(titleElement.attr('href'), request.loadedUrl.replace('/ko/', '/').replace('/en/', '/'))?.split('?', 1)[0];
                 if (link === undefined) return;
-                const dateString = $($(element).children('td')[1]).text().trim();
+                const dateString = $($(element).children()[2]).text().trim();
                 // const viewCount = +$($(element).children('td')[2]).text().trim() ?? 0;
 
                 const newSiteData: SiteData = {
@@ -146,7 +129,10 @@ class CSECrawler extends Crawler {
                 });
             });
             if (request.loadedUrl === undefined) throw new TypeError('request.loadedUrl is undefined');
-            const nextList = absoluteLink($('li.pager-next').children('a').attr('href'), request.loadedUrl);
+
+            const urlInstance = new URL(request.loadedUrl);
+            urlInstance.searchParams.set('pageNum', String(1 + Number(urlInstance.searchParams.get('pageNum') ?? '1')));
+            const nextList = urlInstance.toString();
             if (nextList === undefined) return;
             this.log.info('Enqueueing list', { nextList });
 
@@ -175,5 +161,5 @@ export const cse = new CSECrawler({
     departmentName: '컴퓨터공학부',
     departmentCode: 'cse', // this value must be equal to the filename
     departmentCollege: ENGINEERING,
-    baseUrl: 'https://cse.snu.ac.kr/department-notices',
+    baseUrl: 'https://cse.snu.ac.kr/community/notice',
 });

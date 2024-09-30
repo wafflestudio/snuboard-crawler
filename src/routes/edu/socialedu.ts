@@ -47,7 +47,7 @@ export class SocialEduCrawler extends CategoryCrawler {
             content =
                 load(content, {
                     // @ts-ignore
-                    _useHtmlParser2: true,
+
                     decodeEntities: false,
                 })('body')
                     .html()

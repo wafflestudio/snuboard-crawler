@@ -47,7 +47,7 @@ class ArtCrawler extends CategoryCrawler {
             content =
                 load(content, {
                     // @ts-ignore
-                    _useHtmlParser2: true,
+
                     decodeEntities: false,
                 })('body')
                     .html()
@@ -138,9 +138,8 @@ class ArtCrawler extends CategoryCrawler {
             });
 
             if (siteData.tag === undefined) return;
-            const nextList = `http://art.snu.ac.kr/${siteData.tag}/page/${page + 1}/?catemenu=${
-                siteData.tag === 'notice' ? 'Notice' : 'News'
-            }&type=Events`;
+            const nextList = `http://art.snu.ac.kr/${siteData.tag}/page/${page + 1}/?catemenu=${siteData.tag === 'notice' ? 'Notice' : 'News'
+                }&type=Events`;
             if ($('a.nextpostslink').length !== 0) {
                 this.log.info('Enqueueing list', { nextList });
                 const nextListSiteData: SiteData = {
@@ -200,9 +199,8 @@ class ArtCrawler extends CategoryCrawler {
         } else {
             await Promise.all(
                 categories.map(async (category) => {
-                    const categoryUrl = `${this.baseUrl + category}/page/1/?catemenu=${
-                        category === 'notice' ? 'Notice' : 'News'
-                    }&type=Events`;
+                    const categoryUrl = `${this.baseUrl + category}/page/1/?catemenu=${category === 'notice' ? 'Notice' : 'News'
+                        }&type=Events`;
                     const siteData: SiteData = {
                         department,
                         isList: true,
